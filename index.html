@@ -694,7 +694,7 @@ function taksitOnizle(){const t=parseFloat(document.getElementById('tT')?.value)
 async function taksitleriYukle(){
   document.getElementById('taksitL').innerHTML='<div class="loader">Yükleniyor...</div>';
   try{
-    let q='durum=eq.bekliyor&order=son_odeme_tarihi.asc';
+    let q='durum=eq.bekliyor&order=son_odeme_tarihi.asc&select=*,loan_id,taksit_no';
     const fk=document.getElementById('tFilKaynak')?.value||'';
     const fu=document.getElementById('tFilUye')?.value||'';
     if(fk)q+=`&kaynak=eq.${encodeURIComponent(fk)}`;
@@ -732,8 +732,13 @@ async function taksitleriYukle(){
             <div style="text-align:right;flex-shrink:0">
               <div style="font-weight:500">${formatPara(t.tutar)}<span style="font-size:11px;font-weight:400;color:var(--muted)">/ay</span></div>
               <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${t.kalan_taksit} kaldı · ${formatPara(kt)}</div>
-              ${t.taksit_no?`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Ekstre: ${t.taksit_no}/${t.toplam_taksit}</div>`:''}
-              <div style="display:flex;gap:4px;justify-content:flex-end">${t.taksit_no?`<button class="btn" style="padding:3px 8px;font-size:11px;color:var(--muted)" disabled>Otomatik</button>`:`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`}<button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="taksitSil('${t.id}')">Sil</button></div>
+              ${t.loan_id?`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`:''}
+              <div style="display:flex;gap:4px;justify-content:flex-end">
+                ${t.loan_id
+                  ?`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`
+                  :`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`}
+                <button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="taksitSil('${t.id}')">Sil</button>
+              </div>
             </div>
           </div>`;
         }).join('')}
