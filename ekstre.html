@@ -343,7 +343,8 @@ function parseEtEnpara(metin) {
       const b = parseInt(taksitMatch[2], 10);
       const gecerli = a >= 1 && a <= b && b >= 2 && b <= 60;
       const tarihAdayi = a > b && b <= 12 && a <= 31;
-      if (gecerli && !tarihAdayi) {
+      const ayGunAdayi = a >= 1 && a <= 12 && b >= 13 && b <= 31; // 03/15 gibi MM/DD
+      if (gecerli && !tarihAdayi && !ayGunAdayi) {
         taksitNo = a;
         toplamTaksit = b;
         kalanTaksit = toplamTaksit - taksitNo + 1;
@@ -363,9 +364,7 @@ function parseEtEnpara(metin) {
 
     // Banka etiketleri (PDF'te işlem satırında kalabiliyor)
     aciklama = aciklama
-      .replace(/\bGECİKMİŞ\b/gi, '')
-      .replace(/\bGECIKMIS\b/gi, '')
-      .replace(/\bGEÇİKMİŞ\b/gi, '')
+      .replace(/\bgec[iı]km[iı][sş]\b[:\-]?\s*/gi, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
 
