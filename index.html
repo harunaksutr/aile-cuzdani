@@ -1613,41 +1613,45 @@ async function uyeEkle() {
   const slug = slugYap(ad);
   if (!slug) { toast('Geçerli bir ad girin', true); return; }
   const sira = _uyeler.length + 1;
-  try {
-    const mevcut = await sbGet('members', `slug=eq.${encodeURIComponent(slug)}&select=id,ad,aktif`);
-    if (mevcut.length) {
-      const m = mevcut[0];
-      if (m.aktif === false) {
-        await sbPatch('members', `id=eq.${m.id}`, { ad, renk, sira, aktif: true });
-        toast('Üye yeniden eklendi: ' + ad);
-      } else {
-        toast('Bu isimde bir üye zaten var.', true);
-        return;
-      }
-    } else {
-      await sbPost('members', { slug, ad, renk, sira, aktif: true });
-      toast('Üye eklendi: ' + ad);
+  const body = { slug, ad, renk, sira, aktif: true, owner_id: authUserId() };
+  const upsertPref = { Prefer: 'return=representation,resolution=merge-duplicates' };
+  let ok = false;
+  let sonHata = null;
+  for (const cols of ['owner_id,slug', 'slug']) {
+    try {
+      await sbApiFetch(`${SB_URL}/rest/v1/members?on_conflict=${encodeURIComponent(cols)}`, {
+        method: 'POST',
+        headers: upsertPref,
+        body: JSON.stringify(body)
+      });
+      ok = true;
+      break;
+    } catch (e) {
+      sonHata = e;
     }
-    document.getElementById('yUyeAd').value = '';
-    await uyeleriYukle();
-    uyeListesiGoster();
-  } catch (e) {
-    const msg = String(e.message || '');
-    if (msg.includes('23505') || msg.includes('members_slug')) {
-      try {
-        const tekrar = await sbGet('members', `slug=eq.${encodeURIComponent(slug)}&select=id,aktif`);
-        if (tekrar.length && tekrar[0].aktif === false) {
-          await sbPatch('members', `id=eq.${tekrar[0].id}`, { ad, renk, sira, aktif: true });
-          toast('Üye yeniden eklendi: ' + ad);
-          document.getElementById('yUyeAd').value = '';
-          await uyeleriYukle();
-          uyeListesiGoster();
-          return;
-        }
-      } catch (_) {}
-    }
-    toast('Hata: ' + e.message, true);
   }
+  if (!ok) {
+    try {
+      await sbPost('members', { slug, ad, renk, sira, aktif: true, owner_id: authUserId() });
+      ok = true;
+      sonHata = null;
+    } catch (e2) {
+      sonHata = e2;
+    }
+  }
+  if (!ok) {
+    const m = String(sonHata?.message || '');
+    if (m.includes('23505') || m.includes('members_slug')) {
+      toast('Bu isim (slug) veritabanında zaten var; silinmiş üye satırı RLS ile görünmüyor olabilir. Supabase → Table Editor → members: Raw mode veya SQL ile aynı owner_id + slug satırını sil veya aktif=true yap.', true);
+    } else {
+      toast('Hata: ' + m, true);
+    }
+    return;
+  }
+  toast('Üye kaydedildi: ' + ad);
+  document.getElementById('yUyeAd').value = '';
+  await uyeleriYukle();
+  uyeListesiGoster();
 }
 
 async function uyeRenkGuncelle(id, renk, slug) {
