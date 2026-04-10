@@ -1005,6 +1005,14 @@ function uyeGoster(txn){
 }
 
 let _sonIslemCache=[];
+let _islemEditId = null;
+function h(v){
+  return String(v ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
 function sonIslemGoster(txn){
   _sonIslemCache=txn;
   const sfKat=document.getElementById('sfKat');
@@ -1059,42 +1067,60 @@ async function islemleriYukle(){
     if(max<Infinity)data=data.filter(r=>Number(r.tutar)<=max);
     if(!data.length){document.getElementById('islemT').innerHTML='<div class="loader">Sonuç yok</div>';return;}
     const toplam=data.reduce((s,r)=>s+Number(r.tutar),0);
+    const kaynaklar = Object.keys(KAYNAK_ADI);
     document.getElementById('islemT').innerHTML=`
       <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;color:var(--muted)">${data.length} işlem</span><span style="font-weight:500">${formatPara(toplam)}</span></div>
       <table><thead><tr><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
-      <tbody>${data.map(r=>`<tr class="tr-h"><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${r.aciklama}</td><td class="mu hide-mob">${r.kategori}</td><td class="mu hide-mob">${UYE_ADI[r.uye]||r.uye}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${kaynakAdi(r.kaynak)}</span></td><td class="amt">${formatPara(r.tutar)}</td><td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="islemDuzenle('${r.id}')">Düzenle</button><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`).join('')}</tbody></table>`;
+      <tbody>${data.map(r=>{
+        const edit = _islemEditId === r.id;
+        if(edit){
+          return `<tr class="tr-h">
+            <td><input id="duz_tarih_${r.id}" type="date" value="${h(r.tarih)}" style="width:130px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
+            <td><input id="duz_aciklama_${r.id}" type="text" value="${h(r.aciklama)}" style="width:100%;min-width:160px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
+            <td class="hide-mob"><select id="duz_kategori_${r.id}" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_kategoriler.map(k=>`<option value="${h(k.ad)}" ${k.ad===r.kategori?'selected':''}>${h(k.ad)}</option>`).join('')}</select></td>
+            <td class="hide-mob"><select id="duz_uye_${r.id}" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_uyeler.map(u=>`<option value="${h(u.slug)}" ${u.slug===r.uye?'selected':''}>${h(u.ad)}</option>`).join('')}</select></td>
+            <td><select id="duz_kaynak_${r.id}" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${kaynaklar.map(k=>`<option value="${h(k)}" ${k===r.kaynak?'selected':''}>${h(kaynakAdi(k))}</option>`).join('')}</select></td>
+            <td class="amt"><input id="duz_tutar_${r.id}" type="number" step="0.01" value="${h(r.tutar)}" style="width:120px;text-align:right;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
+            <td style="white-space:nowrap">
+              <button class="btn pri" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="islemDuzenleKaydet('${r.id}')">Kaydet</button>
+              <button class="btn" style="padding:3px 8px;font-size:11px" onclick="islemDuzenleIptal()">İptal</button>
+            </td>
+          </tr>`;
+        }
+        return `<tr class="tr-h"><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${h(r.aciklama)}</td><td class="mu hide-mob">${h(r.kategori)}</td><td class="mu hide-mob">${h(UYE_ADI[r.uye]||r.uye)}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${h(kaynakAdi(r.kaynak))}</span></td><td class="amt">${formatPara(r.tutar)}</td><td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="islemDuzenleBaslat('${r.id}')">Düzenle</button><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`;
+      }).join('')}</tbody></table>`;
   }catch(e){document.getElementById('islemT').innerHTML=`<div class="loader" style="color:var(--red)">Hata: ${e.message}</div>`;}
 }
 function islemFiltreTemizle(){['filAra','filMin','filMax'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['filU','filK','filKy'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});islemleriYukle();}
-async function islemDuzenle(id){
+function islemDuzenleBaslat(id){
+  _islemEditId = id;
+  islemleriYukle();
+}
+function islemDuzenleIptal(){
+  _islemEditId = null;
+  islemleriYukle();
+}
+async function islemDuzenleKaydet(id){
   try{
-    const satir = await sbGet('transactions',`id=eq.${id}&select=*`);
-    if(!satir.length){ toast('İşlem bulunamadı', true); return; }
-    const r = satir[0];
-    const tarih = prompt('Tarih (YYYY-MM-DD):', r.tarih || '');
-    if(tarih===null) return;
-    const aciklama = prompt('Açıklama:', r.aciklama || '');
-    if(aciklama===null) return;
-    const tutarStr = prompt('Tutar (örn: 1250.50):', String(r.tutar ?? ''));
-    if(tutarStr===null) return;
-    const tutar = parseFloat(String(tutarStr).replace(',', '.'));
-    if(!tarih || !aciklama.trim() || !isFinite(tutar) || tutar<=0){ toast('Geçerli tarih, açıklama ve tutar girin', true); return; }
-    const kategoriSecenek = _kategoriler.map(k=>k.ad).join(', ');
-    const kategori = prompt(`Kategori (${kategoriSecenek}):`, r.kategori || '');
-    if(kategori===null) return;
-    const uyeSecenek = _uyeler.map(u=>`${u.ad}:${u.slug}`).join(', ');
-    const uye = prompt(`Üye slug (${uyeSecenek}):`, r.uye || '');
-    if(uye===null) return;
-    const kaynak = prompt('Kaynak (nakit, havale_garanti, garanti, enpara ...):', r.kaynak || '');
-    if(kaynak===null) return;
+    const tarih = (document.getElementById(`duz_tarih_${id}`)?.value || '').trim();
+    const aciklama = (document.getElementById(`duz_aciklama_${id}`)?.value || '').trim();
+    const kategori = (document.getElementById(`duz_kategori_${id}`)?.value || '').trim();
+    const uye = (document.getElementById(`duz_uye_${id}`)?.value || '').trim();
+    const kaynak = (document.getElementById(`duz_kaynak_${id}`)?.value || '').trim();
+    const tutar = parseFloat((document.getElementById(`duz_tutar_${id}`)?.value || '').replace(',', '.'));
+    if(!tarih || !aciklama || !kategori || !uye || !kaynak || !isFinite(tutar) || tutar<=0){
+      toast('Tarih, açıklama, kategori, üye, kaynak ve tutar zorunlu', true);
+      return;
+    }
     await sbPatch('transactions',`id=eq.${id}`,{
-      tarih: tarih.trim(),
-      aciklama: aciklama.trim(),
+      tarih,
+      aciklama,
       tutar,
-      kategori: (kategori||'').trim(),
-      uye: (uye||'').trim(),
-      kaynak: (kaynak||'').trim()
+      kategori,
+      uye,
+      kaynak
     });
+    _islemEditId = null;
     toast('İşlem güncellendi');
     await islemleriYukle();
     dashboardYukle();
