@@ -732,11 +732,9 @@ async function taksitleriYukle(){
             <div style="text-align:right;flex-shrink:0">
               <div style="font-weight:500">${formatPara(t.tutar)}<span style="font-size:11px;font-weight:400;color:var(--muted)">/ay</span></div>
               <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${t.kalan_taksit} kaldı · ${formatPara(kt)}</div>
-              ${t.loan_id?`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`:''}
+              ${(()=>{const ekstre=['garanti','enpara','yapı_kredi'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;const kredi=!!t.loan_id;if(kredi)return`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`;if(ekstre)return`<div style="font-size:10px;color:var(--amber);margin-bottom:4px">📄 Ekstre ile izleniyor</div>`;return '';})()}
               <div style="display:flex;gap:4px;justify-content:flex-end">
-                ${t.loan_id
-                  ?`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`
-                  :`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`}
+                ${(()=>{const ekstre=['garanti','enpara','yapı_kredi'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;return ekstre?`<button class="btn" style="padding:3px 8px;font-size:11px;opacity:.45;cursor:default" disabled title="Ekstre yüklendiğinde otomatik güncellenir">Ekstre</button>`:`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`;})()}
                 <button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="taksitSil('${t.id}')">Sil</button>
               </div>
             </div>
