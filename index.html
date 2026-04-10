@@ -1589,14 +1589,14 @@ async function sifreDegistir(){
   });
   let r = await istek('PATCH');
   let raw = await r.text();
-  if(!r.ok && /405|method not allowed/i.test(String(raw||''))){
+  if(!r.ok && (r.status===405 || /405|method not allowed/i.test(String(raw||'')))){
     r = await istek('PUT');
     raw = await r.text();
   }
   if(!r.ok && sbJwtHatasiMetin(raw) && await authOturumuYenile()){
     r = await istek('PATCH');
     raw = await r.text();
-    if(!r.ok && /405|method not allowed/i.test(String(raw||''))){
+    if(!r.ok && (r.status===405 || /405|method not allowed/i.test(String(raw||'')))){
       r = await istek('PUT');
       raw = await r.text();
     }
@@ -1604,9 +1604,22 @@ async function sifreDegistir(){
   let data = {};
   try{ data = raw ? JSON.parse(raw) : {}; }catch(_){}
   if(!r.ok){
-    const errTxt = data.msg || data.message || data.error_description || raw || 'Güncellenemedi';
+    const errTxt = data.msg || data.message || data.error_description || raw || '';
     const guvenli = /reauthentication|reauth|nonce|otp/i.test(String(errTxt));
-    const mesaj = guvenli ? 'Güvenlik nedeniyle bu oturumda şifre değişimi engellendi. "Şifremi unuttum" ile mailden yenilemeyi dene.' : errTxt;
+    const temel = guvenli
+      ? 'Güvenlik nedeniyle bu oturumda şifre değişimi engellendi.'
+      : (errTxt || `Güncellenemedi (HTTP ${r.status})`);
+    let mesaj = temel;
+    if(!guvenli){
+      try{
+        const redirRaw = authConfirmRedirectUrl();
+        const redir = encodeURIComponent(redirRaw);
+        await authIstek(`recover?redirect_to=${redir}`, { email: eposta, redirect_to: redirRaw });
+        mesaj = `${temel} Şifre sıfırlama bağlantısı e-posta adresine gönderildi.`;
+      }catch(_){}
+    }else{
+      mesaj += ' "Şifremi unuttum" ile mailden yenilemeyi dene.';
+    }
     if(durum){ durum.textContent = mesaj; durum.style.color = 'var(--red)'; }
     toast('Hata: ' + mesaj, true);
     return;
