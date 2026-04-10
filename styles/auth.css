@@ -11,5 +11,7 @@ body.dark .auth-card{box-shadow:0 8px 40px rgba(0,0,0,.35)}
 .auth-form input{border:.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);padding:8px 10px;font-size:13px;outline:none}
 .auth-form input:focus{border-color:var(--blue)}
 .auth-submit{margin-top:12px;border:.5px solid var(--blue);border-radius:var(--r);padding:9px 12px;font-size:13px;color:#fff;background:var(--blue);cursor:pointer}
+.auth-link{margin-top:2px;justify-self:start;border:none;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;padding:2px 0;text-decoration:underline}
+.auth-link[hidden]{display:none}
 .auth-message{min-height:18px;font-size:12px;color:var(--muted);line-height:1.45}
 .auth-message:not(:empty){margin-top:4px}
