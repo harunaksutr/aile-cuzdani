@@ -134,6 +134,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
       <label>Sifre</label>
       <input id="authPassword" type="password" placeholder="En az 6 karakter">
       <button type="button" class="auth-submit" id="authSubmitBtn" onclick="authDevam()">Giriş yap</button>
+      <button type="button" class="auth-link" id="authRecoverBtn" onclick="authSifreSifirla()">Şifremi unuttum</button>
       <p id="authMessage" class="auth-message"></p>
     </div>
   </div>
@@ -578,8 +579,17 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
+const APP_CONFIRM_URL='https://harunaksutr.github.io/aile-cuzdani/';
 const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
 let _authMode = 'login';
+
+function authConfirmRedirectUrl(){
+  try{
+    const here = `${window.location.origin}${window.location.pathname}`;
+    if(/\.github\.io$/i.test(window.location.hostname)) return here;
+  }catch(_){}
+  return APP_CONFIRM_URL;
+}
 
 function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
 function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
@@ -635,6 +645,8 @@ function authTabDegistir(mode, mesajTemizle){
   document.getElementById('tabLogin').classList.toggle('active', mode==='login');
   document.getElementById('tabSignup').classList.toggle('active', mode==='signup');
   document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Giriş yap' : 'Hesap oluştur';
+  const rec = document.getElementById('authRecoverBtn');
+  if(rec) rec.hidden = mode !== 'login';
   const sub = document.getElementById('authSubtitle');
   if(sub){
     sub.textContent = mode==='signup'
@@ -642,6 +654,19 @@ function authTabDegistir(mode, mesajTemizle){
       : 'Hesabınla giriş yap veya yeni hesap oluştur.';
   }
   if(mesajTemizle !== false) authMesaj('');
+}
+async function authSifreSifirla(){
+  const email = (document.getElementById('authEmail')?.value || '').trim();
+  if(!email){ authMesaj('Şifre sıfırlama için önce e-posta gir.', true); return; }
+  try{
+    authMesaj('Şifre sıfırlama e-postası gönderiliyor…');
+    const redirRaw = authConfirmRedirectUrl();
+    const redir = encodeURIComponent(redirRaw);
+    await authIstek(`recover?redirect_to=${redir}`, { email, redirect_to: redirRaw });
+    authMesaj('Şifre sıfırlama bağlantısı gönderildi. Gelen kutunu ve spam klasörünü kontrol et.');
+  }catch(e){
+    authMesaj(e.message || 'Şifre sıfırlama isteği başarısız.', true);
+  }
 }
 function authOturumKaydet(data){
   localStorage.setItem('ac_access_token', data.access_token || '');
@@ -745,7 +770,8 @@ async function authDevam(){
   try{
     if(_authMode === 'signup'){
       authMesaj('Hesap oluşturuluyor…');
-      const signData = await authIstek('signup', { email, password });
+      const redir = encodeURIComponent(authConfirmRedirectUrl());
+      const signData = await authIstek(`signup?redirect_to=${redir}`, { email, password });
       const oturum = authSignupOturumVar(signData);
       if(oturum){
         authOturumKaydet(oturum);
