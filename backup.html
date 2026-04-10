@@ -477,19 +477,14 @@ function temizleTumunuSec(sec) {
 }
 
 async function sbTemizle(tablo) {
-  // Supabase REST: tüm satırları sil — id != '' filtresi gerekli (boş DELETE = 400)
-  const r = await fetch(`${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'id=neq.00000000-0000-0000-0000-000000000000')}`, {
+  // Sadece owner_id ile sil: budgets.id gibi tamsayı PK'lerde id=neq(uuid) / id=like.* hata verir (integer ~~ unknown).
+  const q = ownerFilter(tablo);
+  if (!q) throw new Error(`${tablo}: owner filtresi yok`);
+  const r = await fetch(`${SB_URL}/rest/v1/${tablo}?${q}`, {
     method: 'DELETE',
     headers: apiHeaders()
   });
-  // text id'ler için farklı bir pattern
-  if (!r.ok) {
-    // text PK için tekrar dene
-    const r2 = await fetch(`${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'id=like.*')}`, {
-      method: 'DELETE', headers: apiHeaders()
-    });
-    if (!r2.ok) throw new Error(await r2.text());
-  }
+  if (!r.ok) throw new Error(await r.text());
 }
 
 async function temizleBaslat() {
