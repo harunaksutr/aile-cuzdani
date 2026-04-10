@@ -113,6 +113,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let parseEdilenIslemler = [];
 let kategoriler = [];
+let uyeler = [];
 let seciliBanka = 'garanti';
 
 const BANKA_HINTS = {
@@ -171,6 +172,12 @@ async function pdfYukle(file) {
     const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, {headers: HEADERS});
     kategoriler = (await r.json()).map(k => k.ad);
   } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
+
+  // Üyeleri yükle
+  try {
+    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, {headers: HEADERS});
+    uyeler = await ru.json();
+  } catch(e) { uyeler = [{slug:'harun',ad:'Harun'},{slug:'aslı',ad:'Aslı'},{slug:'zeynep',ad:'Zeynep'},{slug:'zehra',ad:'Zehra'}]; }
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -239,7 +246,7 @@ function parseEtGaranti(metin) {
     if (taksitMatch) { toplamTaksit=parseInt(taksitMatch[2]); taksitNo=parseInt(taksitMatch[3]); kalanTaksit=toplamTaksit-taksitNo+1; }
     let aciklama = kalan.replace(taksitRe,'').replace(tutarRe,'').replace(/\s+\d+\s*$/,'').replace(/\s{2,}/g,' ').trim();
     if (!aciklama || aciklama.length < 2) continue;
-    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:'harun', secili:true });
+    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
   }
   sonucGoster(islemler);
 }
@@ -313,7 +320,7 @@ function parseEtEnpara(metin) {
       taksit_no:     taksitNo,
       kategori: kategoriTahmin(aciklama),
       kaynak: 'enpara',
-      uye: 'harun',
+      uye: (uyeler[0]?.slug||'harun'),
       secili: true
     });
   }
@@ -361,10 +368,7 @@ function tabloGoster() {
       </td>
       <td>
         <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
-          <option value="harun" ${r.uye==='harun'?'selected':''}>Harun</option>
-          <option value="aslı" ${r.uye==='aslı'?'selected':''}>Aslı</option>
-          <option value="zeynep" ${r.uye==='zeynep'?'selected':''}>Zeynep</option>
-          <option value="zehra" ${r.uye==='zehra'?'selected':''}>Zehra</option>
+          ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
         </select>
       </td>
       <td class="amt">${r.tutar.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
