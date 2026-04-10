@@ -1610,18 +1610,44 @@ async function uyeEkle() {
   const ad = document.getElementById('yUyeAd').value.trim();
   const renk = document.getElementById('yUyeRenk').value;
   if (!ad) { toast('Üye adı girin', true); return; }
-  const slug = ad.toLowerCase()
-    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
-    .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
-    .replace(/[^a-z0-9]/g,'_');
+  const slug = slugYap(ad);
+  if (!slug) { toast('Geçerli bir ad girin', true); return; }
   const sira = _uyeler.length + 1;
   try {
-    await sbPost('members', {slug, ad, renk, sira, aktif: true});
-    toast('Üye eklendi: ' + ad);
+    const mevcut = await sbGet('members', `slug=eq.${encodeURIComponent(slug)}&select=id,ad,aktif`);
+    if (mevcut.length) {
+      const m = mevcut[0];
+      if (m.aktif === false) {
+        await sbPatch('members', `id=eq.${m.id}`, { ad, renk, sira, aktif: true });
+        toast('Üye yeniden eklendi: ' + ad);
+      } else {
+        toast('Bu isimde bir üye zaten var.', true);
+        return;
+      }
+    } else {
+      await sbPost('members', { slug, ad, renk, sira, aktif: true });
+      toast('Üye eklendi: ' + ad);
+    }
     document.getElementById('yUyeAd').value = '';
     await uyeleriYukle();
     uyeListesiGoster();
-  } catch(e) { toast('Hata: ' + e.message, true); }
+  } catch (e) {
+    const msg = String(e.message || '');
+    if (msg.includes('23505') || msg.includes('members_slug')) {
+      try {
+        const tekrar = await sbGet('members', `slug=eq.${encodeURIComponent(slug)}&select=id,aktif`);
+        if (tekrar.length && tekrar[0].aktif === false) {
+          await sbPatch('members', `id=eq.${tekrar[0].id}`, { ad, renk, sira, aktif: true });
+          toast('Üye yeniden eklendi: ' + ad);
+          document.getElementById('yUyeAd').value = '';
+          await uyeleriYukle();
+          uyeListesiGoster();
+          return;
+        }
+      } catch (_) {}
+    }
+    toast('Hata: ' + e.message, true);
+  }
 }
 
 async function uyeRenkGuncelle(id, renk, slug) {
