@@ -26,10 +26,18 @@ h1{font-size:34px;line-height:1.15;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
 .f h3{font-size:14px;margin-bottom:4px}
 .f p{font-size:12px;color:var(--muted)}
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.shot-card{background:rgba(255,255,255,.03);border:.5px solid var(--border);border-radius:12px;padding:10px}
+.shot-box{height:140px;border:.5px dashed rgba(255,255,255,.22);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:10px}
+.shot-cap{font-size:12px;color:var(--muted);margin-top:8px}
+.faq{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.qa{background:rgba(255,255,255,.03);border:.5px solid var(--border);border-radius:10px;padding:12px}
+.qa b{display:block;font-size:13px;margin-bottom:6px}
+.qa p{font-size:12px;color:var(--muted)}
 .foot{margin-top:18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .foot a{color:#b8c8ff;text-decoration:none}
 @media(max-width:850px){.hero{grid-template-columns:1fr}.kpis,.grid{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){h1{font-size:28px}.kpis,.grid{grid-template-columns:1fr}.top{flex-direction:column;align-items:flex-start;gap:10px}}
+@media(max-width:520px){h1{font-size:28px}.kpis,.grid,.shots,.faq{grid-template-columns:1fr}.top{flex-direction:column;align-items:flex-start;gap:10px}}
 </style>
 </head>
 <body>
@@ -73,6 +81,46 @@ h1{font-size:34px;line-height:1.15;margin-bottom:10px}
       <div class="f"><h3>Hızlı düzenleme</h3><p>İşlem satırlarını tablo üzerinde doğrudan düzenleyebilirsin.</p></div>
       <div class="f"><h3>Yedekleme</h3><p>Yedek al, geri yükle ve geçmiş kayıtlarını güvenceye al.</p></div>
     </div>
+
+    <div class="shots">
+      <div class="shot-card">
+        <div class="shot-box">Dashboard ekran görüntüsü<br>buraya eklenecek</div>
+        <div class="shot-cap">Aylık trend, kategori dağılımı ve üye bazlı harcama.</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-box">Taksitler ekran görüntüsü<br>buraya eklenecek</div>
+        <div class="shot-cap">Yaklaşan/geciken ödemeler ve kalan taksit görünümü.</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-box">Ekstre Yükle ekran görüntüsü<br>buraya eklenecek</div>
+        <div class="shot-cap">PDF ekstreyi yükleyip işlemleri tek seferde kaydet.</div>
+      </div>
+    </div>
+
+    <div class="faq">
+      <div class="qa">
+        <b>Verilerim güvenli mi?</b>
+        <p>Veriler kullanıcı bazlı RLS ile ayrılır; başka kullanıcıların kayıtları görünmez.</p>
+      </div>
+      <div class="qa">
+        <b>Telefonumdan kullanabilir miyim?</b>
+        <p>Evet. Arayüz mobil uyumludur ve günlük kullanım için optimize edilmiştir.</p>
+      </div>
+      <div class="qa">
+        <b>Ekstredeki işlemleri toplu aktarabilir miyim?</b>
+        <p>Garanti/Enpara/Yapı Kredi ekstrelerinden işlemler seçilerek aktarılabilir.</p>
+      </div>
+      <div class="qa">
+        <b>Sonradan düzenleme var mı?</b>
+        <p>İşlemler sayfasında satır içi düzenleme ile tarih/tutar/kategori/üye değiştirilebilir.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn pri" href="index.html?app=1&auth=signup">Hemen ücretsiz başla</a>
+      <a class="btn" href="index.html?app=1&auth=login">Giriş yap</a>
+    </div>
+
     <div class="foot">
       <div>© Aile Cüzdanı</div>
       <div><a href="privacy.html">Gizlilik Politikası</a> · <a href="terms.html">Kullanıcı Sözleşmesi</a></div>
