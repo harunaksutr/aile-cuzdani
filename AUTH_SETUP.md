@@ -109,16 +109,18 @@ Asagidakileri sirayla dene; her adimda beklenen sonucu kontrol et.
 
 ## GitHub Pages + e-posta onayi (localhost’a gitme sorunu)
 
-E-posta dogrulama linki veya sifre sifirlama **Site URL**’e gider. Supabase varsayilan olarak `http://localhost:3000` kullanabilir.
+E-posta dogrulama linki veya sifre sifirlama **Site URL**’e gider. Supabase varsayilan olarak `http://localhost:3000` kullanabilir; bu yuzden onay linki yanlis adrese gider.
 
 **Supabase Dashboard** > **Authentication** > **URL Configuration**:
 
-| Alan | Ornek deger |
-|------|-------------|
-| **Site URL** | `https://harunaksutr.github.io/test/` |
-| **Redirect URLs** | `https://harunaksutr.github.io/test/**` ve `https://harunaksutr.github.io/test/index.html` |
+| Alan | Deger (bu proje icin) |
+|------|------------------------|
+| **Site URL** | `https://harunaksutr.github.io/aile-cuzdani/` |
+| **Redirect URLs** | `https://harunaksutr.github.io/aile-cuzdani/**` ve `https://harunaksutr.github.io/aile-cuzdani/index.html` |
 
-Kaydet; onay mailindeki linke tekrar tikla veya giris sayfasindan manuel giris yap.
+Kaydet. Sonra **yeni** bir onay maili iste (veya `Authentication` > `Users` > kullanici > **Send magic link** / sifirdan kayit). Eski maildeki link hala localhost ise calismaz.
+
+Uygulama `#access_token=...` hash’ini okuyup oturumu acar; ek ayar gerekmez.
 
 ---
 
