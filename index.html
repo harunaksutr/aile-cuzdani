@@ -520,6 +520,10 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
     <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Giriş yaptığın hesabın şifresini güncelle (en az 6 karakter).</p>
     <div class="fg" style="margin-bottom:12px">
       <div class="fgg">
+        <label>Mevcut şifre</label>
+        <input type="password" id="sifreMevcut" autocomplete="current-password" minlength="6" placeholder="Mevcut şifre">
+      </div>
+      <div class="fgg">
         <label>Yeni şifre</label>
         <input type="password" id="sifreYeni" autocomplete="new-password" minlength="6" placeholder="Yeni şifre">
       </div>
@@ -699,6 +703,8 @@ function authOturumKaydet(data){
   localStorage.setItem('ac_access_token', data.access_token || '');
   localStorage.setItem('ac_refresh_token', data.refresh_token || '');
   localStorage.setItem('ac_user_id', data.user?.id || '');
+  const em = data.user?.email || authJwtPayload(data.access_token || '')?.email || '';
+  if(em) localStorage.setItem('ac_user_email', em);
 }
 /** E-posta onayı / magic link sonrası: #access_token=...&refresh_token=... */
 function authJwtPayload(token){
@@ -836,6 +842,7 @@ async function cikisYap(){
   localStorage.removeItem('ac_access_token');
   localStorage.removeItem('ac_refresh_token');
   localStorage.removeItem('ac_user_id');
+  localStorage.removeItem('ac_user_email');
   location.reload();
 }
 function slugYap(text){
@@ -1554,13 +1561,27 @@ async function butceKaydet(){
 
 // AYARLAR
 async function sifreDegistir(){
+  const mevcut = document.getElementById('sifreMevcut')?.value || '';
   const yeni = document.getElementById('sifreYeni')?.value || '';
   const tekrar = document.getElementById('sifreTekrar')?.value || '';
   const durum = document.getElementById('sifreMesaj');
   if(durum){ durum.textContent = ''; durum.style.color = 'var(--muted)'; }
+  if(mevcut.length < 6){ toast('Mevcut şifreyi girin', true); return; }
   if(yeni.length < 6){ toast('Yeni şifre en az 6 karakter olmalı', true); return; }
   if(yeni !== tekrar){ toast('Şifreler eşleşmiyor', true); return; }
   if(!authToken()){ toast('Oturum bulunamadı', true); return; }
+  const eposta = localStorage.getItem('ac_user_email') || authJwtPayload(authToken())?.email || '';
+  if(!eposta){ toast('E-posta bilgisi bulunamadı. Çıkış yapıp tekrar giriş yapın.', true); return; }
+  try{
+    // Re-auth: Supabase secure password change ayarında zorunlu olabilir.
+    const loginData = await authIstek('token?grant_type=password', { email: eposta, password: mevcut });
+    authOturumKaydet(loginData);
+  }catch(e){
+    const m = String(e.message||'');
+    if(durum){ durum.textContent = 'Mevcut şifre doğrulanamadı.'; durum.style.color = 'var(--red)'; }
+    toast('Hata: ' + m, true);
+    return;
+  }
   const istek = (method) => fetch(`${SB_URL}/auth/v1/user`, {
     method,
     headers: { apikey: SB_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' },
@@ -1597,6 +1618,7 @@ async function sifreDegistir(){
       user: data.user || { id: data.id || authUserId() }
     });
   }
+  document.getElementById('sifreMevcut').value = '';
   document.getElementById('sifreYeni').value = '';
   document.getElementById('sifreTekrar').value = '';
   if(durum){ durum.textContent = 'Şifre güncellendi.'; durum.style.color = 'var(--green)'; }
@@ -1607,6 +1629,8 @@ async function ayarlarYukle(){
   document.getElementById('katL').innerHTML='<div class="loader">Yükleniyor...</div>';
   const sm = document.getElementById('sifreMesaj');
   if(sm){ sm.textContent = ''; sm.style.color = 'var(--muted)'; }
+  const es = document.getElementById('sifreMevcut');
+  if(es) es.value = '';
   try{
     await kategorileriYukle();
     katListesiGoster();
