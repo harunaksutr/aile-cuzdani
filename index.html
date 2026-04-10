@@ -654,6 +654,51 @@ function authHashCallbackIsle(){
   authHashTemizle();
   return true;
 }
+/** access_token JWT süresi en az skewSaniye sonra mı (yoksa yenile) */
+function authJwtGecerli(skewSaniye){
+  const t = authToken();
+  if(!t || t === SB_KEY) return true;
+  const pl = authJwtPayload(t);
+  if(!pl || pl.exp == null) return true;
+  return pl.exp * 1000 > Date.now() + (skewSaniye || 90) * 1000;
+}
+function sbJwtHatasiMetin(txt){
+  return /JWT expired|PGRST303|jwt expired|Invalid JWT|invalid_grant/i.test(String(txt || ''));
+}
+async function authOturumuYenile(){
+  const ref = localStorage.getItem('ac_refresh_token') || '';
+  if(!ref) return false;
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: ref })
+    });
+    const data = await r.json().catch(() => ({}));
+    if(!r.ok || !data.access_token) return false;
+    const uid = data.user?.id || authJwtPayload(data.access_token)?.sub || authUserId();
+    authOturumKaydet({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || ref,
+      user: { id: uid }
+    });
+    return true;
+  }catch(_){ return false; }
+}
+async function sbApiFetch(url, init){
+  const run = () => fetch(url, { ...init, headers: { ...authHeaders(), ...(init.headers || {}) } });
+  let r = await run();
+  let txt = await r.text();
+  if(!r.ok && sbJwtHatasiMetin(txt) && localStorage.getItem('ac_refresh_token')){
+    if(await authOturumuYenile()){
+      r = await run();
+      txt = await r.text();
+    }
+  }
+  if(!r.ok) throw new Error(txt);
+  if(!txt || !String(txt).trim()) return null;
+  try{ return JSON.parse(txt); }catch(_){ return txt; }
+}
 function authSignupOturumVar(signData){
   if(!signData || typeof signData !== 'object') return null;
   const tok = signData.access_token || signData.session?.access_token;
@@ -774,10 +819,23 @@ function kaynakAdi(k){return KAYNAK_ADI[k]||k;}
 
 let secilenAy=bugunAy(),_kategoriler=[],trendC,catC,uyeC;
 
-async function sbGet(t,p=''){const q=ownerFilter(t,p);const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:authHeaders()});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbPost(t,b){const body=OWNER_TABLES.has(t)?{...b,owner_id:authUserId()}:b;const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:authHeaders(),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbPatch(t,p,b){const q=ownerFilter(t,p);const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'PATCH',headers:authHeaders(),body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbDelete(t,p){const q=ownerFilter(t,p);const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'DELETE',headers:authHeaders()});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbGet(t,p=''){
+  const q=ownerFilter(t,p);
+  const data=await sbApiFetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'GET'});
+  return data==null?[]:data;
+}
+async function sbPost(t,b){
+  const body=OWNER_TABLES.has(t)?{...b,owner_id:authUserId()}:b;
+  return sbApiFetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',body:JSON.stringify(body)});
+}
+async function sbPatch(t,p,b){
+  const q=ownerFilter(t,p);
+  return sbApiFetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'PATCH',body:JSON.stringify(b)});
+}
+async function sbDelete(t,p){
+  const q=ownerFilter(t,p);
+  return sbApiFetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'DELETE'});
+}
 
 function bugunAy(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function bugunTarih(){return new Date().toISOString().split('T')[0];}
@@ -1641,6 +1699,9 @@ async function authBaslat(){
     authGovdeScrollKilidi();
     return;
   }
+  if(authToken() && localStorage.getItem('ac_refresh_token') && !authJwtGecerli(120)){
+    await authOturumuYenile();
+  }
   const token = authToken();
   if(!token){
     document.getElementById('authGate').style.display='flex';
@@ -1650,10 +1711,18 @@ async function authBaslat(){
   try{
     await uygulamaBaslat();
   }catch(e){
+    const msg = String(e.message || '');
+    if(sbJwtHatasiMetin(msg) && await authOturumuYenile()){
+      try{
+        await uygulamaBaslat();
+        authGovdeScrollKilidi();
+        return;
+      }catch(_){}
+    }
     localStorage.removeItem('ac_access_token');
     localStorage.removeItem('ac_refresh_token');
     localStorage.removeItem('ac_user_id');
-    authMesaj(e.message, true);
+    authMesaj(sbJwtHatasiMetin(msg) ? 'Oturum süresi doldu. Lütfen tekrar giriş yap.' : e.message, true);
     document.getElementById('authGate').style.display='flex';
   }
   authGovdeScrollKilidi();
