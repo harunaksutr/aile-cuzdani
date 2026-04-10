@@ -3,7 +3,17 @@
 -- Sorun: INSERT ... ON CONFLICT DO UPDATE, RLS'nin UPDATE için sadece aktif=true
 -- satırlara izin vermesi durumunda başarısız olur; ardından düz INSERT 23505 verir.
 --
--- Supabase SQL Editor'da bir kez çalıştır.
+-- Hata: duplicate key "members_slug_key" → slug genelde TÜM kullanıcılar için tekil tanımlı;
+-- bu projede tekillik (owner_id, slug) olmalı. Aşağıdaki 0) bölümü bunu düzeltir.
+--
+-- Supabase SQL Editor'da bir kez çalıştır (tümünü sırayla).
+
+-- 0) members: slug tek başına unique ise (members_slug_key) kaldır; (owner_id, slug) ekle
+ALTER TABLE public.members DROP CONSTRAINT IF EXISTS members_slug_key;
+DROP INDEX IF EXISTS public.members_slug_key;
+ALTER TABLE public.members DROP CONSTRAINT IF EXISTS members_owner_slug_key;
+ALTER TABLE public.members ADD CONSTRAINT members_owner_slug_key UNIQUE (owner_id, slug);
+-- ADD CONSTRAINT başarısız olursa: aynı owner_id+slug ile birden fazla satır vardır; Table Editor ile tekrarları temizleyin.
 
 -- 1) Upsert'ın UPDATE kolunu çalıştırabilmesi: kendi satırların (aktif ne olursa)
 DROP POLICY IF EXISTS "members_update_owner_any_aktif" ON public.members;
