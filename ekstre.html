@@ -52,7 +52,7 @@ td.mu{color:var(--muted)}
 </head>
 <body>
 
-<a class="back-btn" href="index.html">← Dashboard'a dön</a>
+<a class="back-btn" href="index.html?app=1">← Dashboard'a dön</a>
 <h2>Garanti BBVA Ekstre Yükle</h2>
 
 <div class="card" id="uploadCard">
@@ -122,7 +122,7 @@ function ownerFilter(table,p=''){
   const own = `owner_id=eq.${encodeURIComponent(authUserId())}`;
   return p ? `${p}&${own}` : own;
 }
-if(!authToken()){ location.href = 'index.html'; }
+if(!authToken()){ location.href = 'index.html?app=1&auth=login'; }
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -552,7 +552,7 @@ async function kaydet() {
   if (hata     > 0) mesajlar.push(`${hata} hata`);
 
   document.getElementById('alertBox').innerHTML = basarili > 0 || atlandi > 0
-    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
+    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html?app=1" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
     : `<div class="alert err">Kayıt başarısız. Bağlantıyı kontrol edin.</div>`;
 }
 
