@@ -986,7 +986,21 @@ async function taksitOdendi(id,odemeYontemi){
       uye:t.uye,
       notlar:`Taksit ödemesi`
     });
-    await sbPatch('installments',`id=eq.${id}`,{kalan_taksit:yk,durum:yk<=0?'odendi':'bekliyor'});
+    const patch={kalan_taksit:yk,durum:yk<=0?'odendi':'bekliyor'};
+    if(yk>0&&t.loan_id){
+      const sonraki=new Date((t.son_odeme_tarihi||'')+'T12:00:00');
+      if(!isNaN(sonraki.getTime())){
+        sonraki.setMonth(sonraki.getMonth()+1);
+        patch.son_odeme_tarihi=sonraki.toISOString().split('T')[0];
+        patch.taksit_no=(Number(t.taksit_no)||0)+1;
+      }
+    }
+    await sbPatch('installments',`id=eq.${id}`,patch);
+    if(yk>0&&t.loan_id){
+      try{
+        await sbPatch('loans',`id=eq.${t.loan_id}`,{kalan_taksit:yk});
+      }catch(_){/* senkron isteğe bağlı */}
+    }
     toast(yk<=0?'Taksit tamamlandı!':`${yk} taksit kaldı`);
     taksitleriYukle();
   }catch(e){toast('Hata: '+e.message,true);}
@@ -1025,11 +1039,11 @@ function krediOnizle(){
     for(let i=0;i<toplam;i++){const t=new Date(ilkOdeme);t.setMonth(t.getMonth()+i);if(bugun>=t)gecenAy++;else break;}
     const kalan=Math.max(0,toplam-gecenAy);
     if(gecenAy>0&&gecenAy<toplam){
-      uyariEl.textContent=`ℹ ${gecenAy} taksit geçmiş (ödenmiş), ${kalan} taksit oluşturulacak`;
+      uyariEl.textContent=`ℹ ${gecenAy} ay geçmiş (ödenmiş), ${kalan} ay kalan — taksitler listesinde tek satır`;
     } else if(gecenAy>=toplam){
       uyariEl.textContent='⚠ Bu kredi tamamen ödenmiş görünüyor';
     } else {
-      uyariEl.textContent=`${toplam} taksit oluşturulacak`;
+      uyariEl.textContent=`${toplam} aylık vade — taksitler listesinde tek satır`;
     }
   } else { el.style.display='none'; }
 }
@@ -1127,31 +1141,24 @@ async function krediEkle(){
     const kreRes=await sbPost('loans',body);
     const loanId=kreRes?.[0]?.id;
     
-    // Gelecek taksitleri (ödenmemiş) installments tablosuna otomatik ekle
+    // Tek installments satırı: aylık tutar + kalan_taksit; son_odeme bir sonraki ödeme tarihi
     if(loanId&&kalanTaksit>0){
-      const taksitler=[];
-      for(let i=0;i<kalanTaksit;i++){
-        const odTarih=new Date(ilkOdeme);
-        odTarih.setMonth(odTarih.getMonth()+odenmisTaksit+i);
-        const taksitNo=odenmisTaksit+i+1;
-        taksitler.push({
-          aciklama:`${ad} — ${taksitNo}/${toplamTaksit}. taksit`,
-          tutar:aylikTaksit,
-          kaynak:banka,
-          uye:(_uyeler[0]?.slug||'harun'),
-          toplam_taksit:toplamTaksit,
-          kalan_taksit:kalanTaksit-i,
-          taksit_no:taksitNo,
-          loan_id:loanId,
-          son_odeme_tarihi:odTarih.toISOString().split('T')[0],
-          durum:'bekliyor'
-        });
-      }
-      // Toplu ekle (batch)
-      for(const t of taksitler){
-        await sbPost('installments',t);
-      }
-      toast(`Kredi eklendi · ${kalanTaksit} taksit oluşturuldu`);
+      const sonrakiOdeme=new Date(ilkOdeme+'T12:00:00');
+      sonrakiOdeme.setMonth(sonrakiOdeme.getMonth()+odenmisTaksit);
+      const siradakiNo=odenmisTaksit+1;
+      await sbPost('installments',{
+        aciklama:ad,
+        tutar:aylikTaksit,
+        kaynak:banka,
+        uye:(_uyeler[0]?.slug||'harun'),
+        toplam_taksit:toplamTaksit,
+        kalan_taksit:kalanTaksit,
+        taksit_no:siradakiNo,
+        loan_id:loanId,
+        son_odeme_tarihi:sonrakiOdeme.toISOString().split('T')[0],
+        durum:'bekliyor'
+      });
+      toast('Kredi eklendi · taksitlerde tek satır');
     } else {
       toast('Kredi eklendi');
     }
@@ -1165,13 +1172,14 @@ async function krediEkle(){
 }
 
 async function krediOdendi(id){
-  // Loan'a bağlı installments'tan kalan_taksit hesapla
+  // Loan'a bağlı bekleyen taksit: tek satırda kalan_taksit; eski veride satır başına 1 ay
   try{
     const loans=await sbGet('loans',`id=eq.${id}`);
     if(!loans.length)return;
-    const l=loans[0];
     const inst=await sbGet('installments',`loan_id=eq.${id}&durum=eq.bekliyor`);
-    const yk=inst.length;
+    let yk=0;
+    if(inst.length===1)yk=Number(inst[0].kalan_taksit)||0;
+    else if(inst.length>1)yk=inst.length;
     await sbPatch('loans',`id=eq.${id}`,{kalan_taksit:yk,durum:yk<=0?'kapandi':'aktif'});
     toast(yk<=0?'Kredi kapandı!':`${yk} taksit kaldı`);
     kredileriYukle();
@@ -1180,7 +1188,14 @@ async function krediOdendi(id){
 
 async function krediSil(id){
   if(!confirm('Bu krediyi silmek istediğinize emin misiniz?'))return;
-  try{await sbDelete('loans',`id=eq.${id}`);toast('Kredi silindi');kredileriYukle();}catch(e){toast('Hata: '+e.message,true);}
+  try{
+    const bagli=await sbGet('installments',`loan_id=eq.${id}&select=id`);
+    for(const row of bagli){ await sbDelete('installments',`id=eq.${row.id}`); }
+    await sbDelete('loans',`id=eq.${id}`);
+    toast('Kredi silindi');
+    kredileriYukle();
+    taksitleriYukle();
+  }catch(e){toast('Hata: '+e.message,true);}
 }
 
 // BÜTÇE
