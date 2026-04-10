@@ -17,6 +17,25 @@ CREATE INDEX IF NOT EXISTS app_user_registry_role_idx ON public.app_user_registr
 
 ALTER TABLE public.app_user_registry ENABLE ROW LEVEL SECURITY;
 
+-- Politika içinde doğrudan bu tabloya SELECT, RLS'yi tekrar çalıştırır → "infinite recursion".
+-- SECURITY DEFINER: fonksiyon sahibi olarak okur, RLS uygulanmaz (sadece admin kontrolü için).
+CREATE OR REPLACE FUNCTION public.is_app_registry_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.app_user_registry r
+    WHERE r.id = auth.uid() AND r.role = 'admin'
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_app_registry_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_app_registry_admin() TO authenticated;
+
 -- Herkes kendi satırını görebilir
 DROP POLICY IF EXISTS "registry_select_own" ON public.app_user_registry;
 CREATE POLICY "registry_select_own"
@@ -31,12 +50,7 @@ CREATE POLICY "registry_select_admin_all"
   ON public.app_user_registry
   FOR SELECT
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.app_user_registry r
-      WHERE r.id = auth.uid() AND r.role = 'admin'
-    )
-  );
+  USING (public.is_app_registry_admin());
 
 -- Sadece yöneticiler rol (ve e-posta senkronu) güncelleyebilir
 DROP POLICY IF EXISTS "registry_update_admin" ON public.app_user_registry;
@@ -44,12 +58,7 @@ CREATE POLICY "registry_update_admin"
   ON public.app_user_registry
   FOR UPDATE
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.app_user_registry r
-      WHERE r.id = auth.uid() AND r.role = 'admin'
-    )
-  )
+  USING (public.is_app_registry_admin())
   WITH CHECK (true);
 
 -- Yeni kayıt: auth.users eklendiğinde
