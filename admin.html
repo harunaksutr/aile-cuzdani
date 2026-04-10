@@ -94,11 +94,24 @@ function escapeHtml(s) {
 async function baslat() {
   const area = document.getElementById('mainArea');
   if (!authToken()) {
-    location.href = 'index.html';
+    area.innerHTML = `
+      <div class="card">
+        <div class="ct">Giriş gerekli</div>
+        <p style="font-size:14px;margin-bottom:14px">Yönetim sayfası için önce ana uygulamada oturum açmalısın.</p>
+        <a class="btn pri" href="index.html">Giriş sayfasına git</a>
+      </div>`;
     return;
   }
   try {
     const uid = authUserId();
+    if (!uid) {
+      area.innerHTML = `
+        <div class="card">
+          <div class="alert err" style="margin:0">Oturum bilgisi eksik. Çıkış yapıp tekrar giriş yap.</div>
+          <p style="margin-top:14px"><a class="btn pri" href="index.html">Ana sayfa</a></p>
+        </div>`;
+      return;
+    }
     const me = await sbRegistry(`?id=eq.${encodeURIComponent(uid)}&select=id,email,role`, { method: 'GET' });
     if (!Array.isArray(me) || !me.length) {
       area.innerHTML = `
@@ -124,9 +137,10 @@ async function baslat() {
       return;
     }
 
-    const tumu = await sbRegistry('?select=id,email,role,created_at&order=created_at.desc&limit=500', { method: 'GET' });
+    const tumuRaw = await sbRegistry('?select=id,email,role,created_at&order=created_at.desc&limit=500', { method: 'GET' });
+    const tumu = Array.isArray(tumuRaw) ? tumuRaw : [];
     alertBox(
-      'Auth’dan tam kullanıcı silmek veya şifre sıfırlamak için Supabase → Authentication → Users kullan.',
+      "Tam kullanıcı silmek veya şifre sıfırlamak için Supabase panelinde Authentication → Users bölümünü kullan.",
       'warn'
     );
     area.innerHTML = `
