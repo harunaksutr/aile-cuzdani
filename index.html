@@ -61,6 +61,19 @@ tr:last-child td{border-bottom:none}td.amt{font-weight:500;text-align:right;whit
 .br{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .pb{background:var(--border);border-radius:4px;height:4px;margin-top:4px;overflow:hidden}
 .pf{height:100%;border-radius:4px;background:var(--blue)}
+/* Bildirim banner */
+#bildirimBanner{position:fixed;top:48px;left:0;right:0;z-index:90;display:none;flex-direction:column;gap:0}
+.bildirim-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;border-bottom:.5px solid rgba(0,0,0,.08);animation:slideDown .25s ease}
+.bildirim-item.urgent{background:#FEF3C7;color:#92400E}
+.bildirim-item.upcoming{background:#EFF6FF;color:#1E40AF}
+body.dark .bildirim-item.urgent{background:rgba(239,159,39,.15);color:#EF9F27}
+body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
+.bildirim-item .bi{font-size:16px;flex-shrink:0}
+.bildirim-item .bt{flex:1}
+.bildirim-item .bc{font-size:11px;opacity:.7;margin-top:1px}
+.bildirim-kapat{background:none;border:none;cursor:pointer;font-size:16px;opacity:.5;padding:2px 6px;color:inherit;flex-shrink:0}
+.bildirim-kapat:hover{opacity:1}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 #toast{position:fixed;bottom:80px;right:16px;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
 #toast.show{opacity:1}
 .loader{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);font-size:13px}
@@ -116,6 +129,7 @@ tr:last-child td{border-bottom:none}td.amt{font-weight:500;text-align:right;whit
   </button>
 </nav>
 
+<div id="bildirimBanner"></div>
 <div class="overlay" id="overlay" onclick="menuKapat()"></div>
 <div class="mobile-menu" id="mobileMenu">
   <a onclick="showPage('dashboard');menuKapat()" id="mob-dashboard" class="active">Dashboard</a>
@@ -445,6 +459,20 @@ tr:last-child td{border-bottom:none}td.amt{font-weight:500;text-align:right;whit
 
 <!-- AYARLAR -->
 <div class="page" id="page-ayarlar">
+  <div class="card" style="max-width:560px;margin-bottom:12px">
+    <div class="ct">Bildirimler</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:13px;margin-bottom:3px">Push bildirimleri</div>
+        <div style="font-size:12px;color:var(--muted)" id="pushDurum">Durum kontrol ediliyor...</div>
+      </div>
+      <button class="btn pri" id="pushBtn" onclick="pushIzinIste()" style="display:none">İzin ver</button>
+      <span id="pushAktif" style="display:none;font-size:12px;color:var(--green)">✓ Aktif</span>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+      Ödeme tarihi gelen taksitler için sabah 08:00'de hatırlatma alırsın.
+    </div>
+  </div>
   <div class="card" style="max-width:560px">
     <div class="ct">Kategori yönetimi</div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -1023,12 +1051,161 @@ function katListesiGoster(){
 async function kategoriEkle(){const ad=document.getElementById('yKat').value.trim().toLowerCase();if(!ad){toast('Kategori adı girin',true);return;}try{await sbPost('categories',{ad,renk:'#888780',sira:_kategoriler.length+1});toast('Kategori eklendi: '+ad);document.getElementById('yKat').value='';await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
 async function kategoriSil(ad){if(!confirm(`"${ad}" silinsin mi?`))return;try{await sbDelete('categories',`ad=eq.${encodeURIComponent(ad)}`);toast('Silindi');await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
 
+
+// ── BİLDİRİM SİSTEMİ ──────────────────────────────────────────────
+const BILDIRIM_KEY = 'acuzdani_bildirim_kapat';
+const PUSH_GUNLER  = 7; // kaç gün öncesi "yaklaşan" sayılır
+
+async function bildirimKontrol() {
+  // Bugün kapatıldıysa gösterme
+  const kapatilan = localStorage.getItem(BILDIRIM_KEY);
+  if (kapatilan === new Date().toDateString()) return;
+
+  try {
+    const bugun = new Date();
+    const bugunStr = bugun.toISOString().split('T')[0];
+    const limitStr = new Date(bugun.getTime() + PUSH_GUNLER * 86400000).toISOString().split('T')[0];
+
+    // Bu hafta içinde son_odeme_tarihi olan bekleyen taksitler
+    const data = await sbGet('installments',
+      `durum=eq.bekliyor&son_odeme_tarihi=lte.${limitStr}&order=son_odeme_tarihi.asc&select=aciklama,tutar,son_odeme_tarihi,uye`
+    );
+    if (!data.length) return;
+
+    const urgent   = data.filter(t => t.son_odeme_tarihi <= bugunStr);
+    const upcoming = data.filter(t => t.son_odeme_tarihi >  bugunStr);
+
+    const banner = document.getElementById('bildirimBanner');
+    const items  = [];
+
+    urgent.forEach(t => {
+      const gecti = t.son_odeme_tarihi < bugunStr;
+      items.push(`<div class="bildirim-item urgent">
+        <span class="bi">${gecti ? '🔴' : '🟡'}</span>
+        <div class="bt">
+          <div>${gecti ? 'Gecikmiş' : 'Bugün'}: <strong>${t.aciklama}</strong></div>
+          <div class="bc">${formatPara(t.tutar)} · ${t.son_odeme_tarihi} · ${UYE_ADI[t.uye]||t.uye}</div>
+        </div>
+        <button class="bildirim-kapat" onclick="this.closest('.bildirim-item').remove();bildirimBannerKontrol()">×</button>
+      </div>`);
+    });
+
+    upcoming.forEach(t => {
+      const kalan = Math.ceil((new Date(t.son_odeme_tarihi) - bugun) / 86400000);
+      items.push(`<div class="bildirim-item upcoming">
+        <span class="bi">📅</span>
+        <div class="bt">
+          <div>${kalan} gün sonra: <strong>${t.aciklama}</strong></div>
+          <div class="bc">${formatPara(t.tutar)} · ${t.son_odeme_tarihi} · ${UYE_ADI[t.uye]||t.uye}</div>
+        </div>
+        <button class="bildirim-kapat" onclick="this.closest('.bildirim-item').remove();bildirimBannerKontrol()">×</button>
+      </div>`);
+    });
+
+    if (items.length) {
+      banner.innerHTML = items.join('') +
+        `<div style="display:flex;justify-content:flex-end;background:var(--card);padding:6px 14px;border-bottom:.5px solid var(--border)">
+          <button class="btn" style="font-size:11px;padding:3px 10px" onclick="bildirimKapat()">Tümünü kapat</button>
+        </div>`;
+      banner.style.display = 'flex';
+      // main padding-top'u banner yüksekliğine göre ayarla
+      setTimeout(() => {
+        const h = banner.offsetHeight;
+        document.querySelector('main').style.paddingTop = (h + 8) + 'px';
+      }, 50);
+
+      // Push bildirimi de gönder (izin varsa)
+      if (Notification.permission === 'granted' && urgent.length) {
+        pushGonder(urgent);
+      }
+    }
+  } catch(e) { /* sessiz hata */ }
+}
+
+function bildirimBannerKontrol() {
+  const banner = document.getElementById('bildirimBanner');
+  if (!banner.querySelector('.bildirim-item')) {
+    banner.style.display = 'none';
+    document.querySelector('main').style.paddingTop = '';
+  }
+}
+
+function bildirimKapat() {
+  localStorage.setItem(BILDIRIM_KEY, new Date().toDateString());
+  const banner = document.getElementById('bildirimBanner');
+  banner.style.display = 'none';
+  document.querySelector('main').style.paddingTop = '';
+}
+
+// Push bildirimi gönder (SW üzerinden)
+function pushGonder(taksitler) {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    const basliklar = taksitler.map(t => t.aciklama).join(', ');
+    const toplam = taksitler.reduce((s, t) => s + Number(t.tutar), 0);
+    reg.showNotification('Aile Cüzdanı — Ödeme Hatırlatması', {
+      body: `${taksitler.length} ödeme: ${basliklar} · ${formatPara(toplam)}`,
+      icon: 'https://harunaksutr.github.io/aile-cuzdani/icon-192.png',
+      tag: 'taksit-hatirlatma',
+      data: { url: 'https://harunaksutr.github.io/aile-cuzdani/' }
+    });
+  }).catch(() => {});
+}
+
+// Push izin iste
+async function pushIzinIste() {
+  if (!('Notification' in window)) {
+    toast('Tarayıcı bildirim desteklemiyor', true); return;
+  }
+  const izin = await Notification.requestPermission();
+  pushDurumGoster();
+  if (izin === 'granted') {
+    toast('Bildirimler aktif ✓');
+    // SW kaydet
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  } else {
+    toast('Bildirim izni verilmedi', true);
+  }
+}
+
+function pushDurumGoster() {
+  if (!('Notification' in window)) {
+    document.getElementById('pushDurum').textContent = 'Bu tarayıcı push bildirimi desteklemiyor';
+    return;
+  }
+  const p = Notification.permission;
+  const durum = document.getElementById('pushDurum');
+  const btn   = document.getElementById('pushBtn');
+  const aktif = document.getElementById('pushAktif');
+  if (p === 'granted') {
+    durum.textContent = 'Push bildirimleri açık';
+    btn.style.display = 'none';
+    aktif.style.display = 'inline';
+  } else if (p === 'denied') {
+    durum.textContent = 'İzin reddedildi — tarayıcı ayarlarından açabilirsin';
+    btn.style.display = 'none';
+    aktif.style.display = 'none';
+  } else {
+    durum.textContent = 'Henüz izin verilmedi';
+    btn.style.display = 'inline-flex';
+    aktif.style.display = 'none';
+  }
+}
+
+// SW kayıt
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+// ──────────────────────────────────────────────────────────────────
+
 // BAŞLANGIÇ
 temaBaslat();
 document.getElementById('fT').value=bugunTarih();
 document.getElementById('tD').value=bugunTarih();
 aySeciciDoldur();
-kategorileriYukle().then(()=>dashboardYukle());
+kategorileriYukle().then(()=>{dashboardYukle();bildirimKontrol();pushDurumGoster();});
 </script>
 </body>
 </html>
