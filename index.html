@@ -501,6 +501,25 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   </div>
 
   <div class="card" style="max-width:560px;margin-bottom:12px">
+    <div class="ct">Şifre değiştir</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Giriş yaptığın hesabın şifresini güncelle (en az 6 karakter).</p>
+    <div class="fg" style="margin-bottom:12px">
+      <div class="fgg">
+        <label>Yeni şifre</label>
+        <input type="password" id="sifreYeni" autocomplete="new-password" minlength="6" placeholder="Yeni şifre">
+      </div>
+      <div class="fgg">
+        <label>Yeni şifre (tekrar)</label>
+        <input type="password" id="sifreTekrar" autocomplete="new-password" minlength="6" placeholder="Tekrar">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button type="button" class="btn pri" onclick="sifreDegistir()">Şifreyi güncelle</button>
+      <span id="sifreMesaj" style="font-size:12px;color:var(--muted);max-width:100%"></span>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:560px;margin-bottom:12px">
     <div class="ct">Bildirimler</div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -1348,8 +1367,50 @@ async function butceKaydet(){
 }
 
 // AYARLAR
+async function sifreDegistir(){
+  const yeni = document.getElementById('sifreYeni')?.value || '';
+  const tekrar = document.getElementById('sifreTekrar')?.value || '';
+  const durum = document.getElementById('sifreMesaj');
+  if(durum){ durum.textContent = ''; durum.style.color = 'var(--muted)'; }
+  if(yeni.length < 6){ toast('Yeni şifre en az 6 karakter olmalı', true); return; }
+  if(yeni !== tekrar){ toast('Şifreler eşleşmiyor', true); return; }
+  if(!authToken()){ toast('Oturum bulunamadı', true); return; }
+  const istek = () => fetch(`${SB_URL}/auth/v1/user`, {
+    method: 'PATCH',
+    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: yeni })
+  });
+  let r = await istek();
+  let raw = await r.text();
+  if(!r.ok && sbJwtHatasiMetin(raw) && await authOturumuYenile()){
+    r = await istek();
+    raw = await r.text();
+  }
+  let data = {};
+  try{ data = raw ? JSON.parse(raw) : {}; }catch(_){}
+  if(!r.ok){
+    const errTxt = data.msg || data.message || data.error_description || raw || 'Güncellenemedi';
+    if(durum){ durum.textContent = errTxt; durum.style.color = 'var(--red)'; }
+    toast('Hata: ' + errTxt, true);
+    return;
+  }
+  if(data.access_token){
+    authOturumKaydet({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || localStorage.getItem('ac_refresh_token') || '',
+      user: data.user || { id: data.id || authUserId() }
+    });
+  }
+  document.getElementById('sifreYeni').value = '';
+  document.getElementById('sifreTekrar').value = '';
+  if(durum){ durum.textContent = 'Şifre güncellendi.'; durum.style.color = 'var(--green)'; }
+  toast('Şifre güncellendi');
+}
+
 async function ayarlarYukle(){
   document.getElementById('katL').innerHTML='<div class="loader">Yükleniyor...</div>';
+  const sm = document.getElementById('sifreMesaj');
+  if(sm){ sm.textContent = ''; sm.style.color = 'var(--muted)'; }
   try{
     await kategorileriYukle();
     katListesiGoster();
