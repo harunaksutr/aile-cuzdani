@@ -573,7 +573,14 @@ async function authIstek(path, body){
     body: JSON.stringify(body)
   });
   const data = await r.json().catch(() => ({}));
-  if(!r.ok) throw new Error(data?.msg || data?.error_description || 'Kimlik dogrulama hatasi');
+  if(!r.ok){
+    const raw = data?.msg || data?.message || data?.error_description || '';
+    const code = (data?.error_code || data?.code || '').toString();
+    if(/email_not_confirmed|email not confirmed/i.test(code + raw)){
+      throw new Error('E-posta henüz onaylanmadı. Gelen kutunu ve spam klasörünü kontrol et; onay linkine tıkladıktan sonra tekrar giriş yap.');
+    }
+    throw new Error(raw || 'Kimlik doğrulama hatası');
+  }
   return data;
 }
 function authMesaj(msg, err=false){
@@ -608,17 +615,43 @@ function authOturumKaydet(data){
   localStorage.setItem('ac_refresh_token', data.refresh_token || '');
   localStorage.setItem('ac_user_id', data.user?.id || '');
 }
+function authSignupOturumVar(signData){
+  if(!signData || typeof signData !== 'object') return null;
+  const tok = signData.access_token || signData.session?.access_token;
+  if(!tok) return null;
+  const ref = signData.refresh_token || signData.session?.refresh_token || '';
+  const user = signData.user || (signData.id ? signData : null);
+  return {
+    access_token: tok,
+    refresh_token: ref,
+    user: user || {}
+  };
+}
 async function authDevam(){
   const email = (document.getElementById('authEmail')?.value || '').trim();
   const password = document.getElementById('authPassword')?.value || '';
   if(!email || !password){ authMesaj('E-posta ve şifre zorunlu.', true); return; }
   try{
-    authMesaj(_authMode==='login' ? 'Giriş yapılıyor…' : 'Hesap oluşturuluyor…');
     if(_authMode === 'signup'){
-      await authIstek('signup', { email, password });
+      authMesaj('Hesap oluşturuluyor…');
+      const signData = await authIstek('signup', { email, password });
+      const oturum = authSignupOturumVar(signData);
+      if(oturum){
+        authOturumKaydet(oturum);
+        authMesaj('');
+        await uygulamaBaslat();
+        return;
+      }
+      authMesaj('Kayıt tamam. E-postana gelen onay bağlantısına tıkla; onayladıktan sonra «Giriş» sekmesinden şifrenle giriş yap.', false);
+      authTabDegistir('login');
+      document.getElementById('authPassword').value = '';
+      authGovdeScrollKilidi();
+      return;
     }
+    authMesaj('Giriş yapılıyor…');
     const loginData = await authIstek('token?grant_type=password', { email, password });
     authOturumKaydet(loginData);
+    authMesaj('');
     await uygulamaBaslat();
   }catch(e){
     authMesaj(e.message, true);
