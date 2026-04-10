@@ -493,18 +493,22 @@ async function kaydet() {
             });
           }
         } else {
-          // Yeni taksit kaydı oluştur
-          const sonOdeme = new Date(r.tarih);
-          sonOdeme.setMonth(sonOdeme.getMonth() + r.kalan_taksit - 1);
-          await fetch(`${SB_URL}/rest/v1/installments`, {
-            method: 'POST', headers: apiHeaders(),
-            body: JSON.stringify({
-              aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
-              toplam_taksit: r.toplam_taksit, kalan_taksit: r.kalan_taksit,
-              taksit_no: r.taksit_no,
-              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor', owner_id: authUserId()
-            })
-          });
+          // Ekstre satırı bu ayın taksidinin zaten ödendiğini gösterir.
+          // Bu yüzden yeni kayıt açarken kalan_taksit'i 1 azaltıp "sıradaki ödeme"yi yaz.
+          const yeniKalan = Math.max(0, Number(r.kalan_taksit || 0) - 1);
+          if (yeniKalan > 0) {
+            const sonrakiOdeme = new Date(r.tarih + 'T12:00:00');
+            sonrakiOdeme.setMonth(sonrakiOdeme.getMonth() + 1);
+            await fetch(`${SB_URL}/rest/v1/installments`, {
+              method: 'POST', headers: apiHeaders(),
+              body: JSON.stringify({
+                aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
+                toplam_taksit: r.toplam_taksit, kalan_taksit: yeniKalan,
+                taksit_no: Math.min(Number(r.toplam_taksit || 1), Number(r.taksit_no || 1) + 1),
+                son_odeme_tarihi: sonrakiOdeme.toISOString().split('T')[0], durum: 'bekliyor', owner_id: authUserId()
+              })
+            });
+          }
         }
       }
       basarili++;
