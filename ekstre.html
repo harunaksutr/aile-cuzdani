@@ -44,6 +44,8 @@ td.mu{color:var(--muted)}
 .alert.err{background:rgba(226,75,74,.1);color:var(--red);border:.5px solid rgba(226,75,74,.3)}
 .sel-all{font-size:12px;color:var(--blue);cursor:pointer;text-decoration:underline}
 .cat-sel{font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text)}
+.uye-hucre{display:flex;align-items:center;gap:6px}
+.uye-asagi{padding:3px 8px;font-size:11px;line-height:1}
 .back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
 .back-btn:hover{color:var(--text)}
 </style>
@@ -78,6 +80,7 @@ td.mu{color:var(--muted)}
       <strong style="font-size:14px">Bulunan işlemler</strong>
       <span class="sel-all" style="margin-left:12px" onclick="tumunuSec(true)">Tümünü seç</span>
       <span class="sel-all" style="margin-left:8px" onclick="tumunuSec(false)">Temizle</span>
+      <span style="font-size:12px;color:var(--muted);margin-left:12px">Üye sütununda `↓` ile aşağıya uygula</span>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="sifirla()">Yeni PDF</button>
@@ -429,9 +432,12 @@ function tabloGoster() {
         </select>
       </td>
       <td>
-        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
-          ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
-        </select>
+        <div class="uye-hucre">
+          <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
+            ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
+          </select>
+          <button class="btn uye-asagi" type="button" title="Bu satırdan aşağı hepsine uygula" onclick="uyeyiAsagiUygula(${i})">↓</button>
+        </div>
       </td>
       <td class="amt">${r.tutar.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
     </tr>`).join('');
@@ -440,6 +446,15 @@ function tabloGoster() {
 function tumunuSec(secili) {
   parseEdilenIslemler.forEach(r => r.secili = secili);
   document.querySelectorAll('#islemBody .chk').forEach(c => c.checked = secili);
+}
+
+function uyeyiAsagiUygula(index) {
+  const secilen = parseEdilenIslemler[index]?.uye;
+  if (!secilen) return;
+  for (let i = index; i < parseEdilenIslemler.length; i++) {
+    parseEdilenIslemler[i].uye = secilen;
+  }
+  tabloGoster();
 }
 
 async function kaydet() {
