@@ -52,7 +52,7 @@ input[type=file]{display:none}
 </head>
 <body>
 
-<a class="back-btn" href="index.html">← Uygulamaya dön</a>
+<a class="back-btn" href="index.html?app=1">← Uygulamaya dön</a>
 <h2>💾 Yedek & Geri Yükleme</h2>
 <p class="sub">Tüm verilerini JSON formatında indir veya önceki bir yedeği geri yükle.</p>
 
@@ -155,7 +155,7 @@ function ownerFilter(table,p=''){
   const own = `owner_id=eq.${encodeURIComponent(authUserId())}`;
   return p ? `${p}&${own}` : own;
 }
-if(!authToken()){ location.href = 'index.html'; }
+if(!authToken()){ location.href = 'index.html?app=1&auth=login'; }
 
 const TABLOLAR = [
   {key:'transactions', ad:'İşlemler',     ikon:'💳'},
@@ -407,7 +407,7 @@ async function importBaslat() {
   btn.disabled = false;
 
   if (hataSayisi === 0) {
-    alert_(`✓ Geri yükleme tamamlandı · ${tamam} tablo başarılı · <a href="index.html" style="color:var(--green);font-weight:500">Uygulamaya dön →</a>`, 'suc');
+    alert_(`✓ Geri yükleme tamamlandı · ${tamam} tablo başarılı · <a href="index.html?app=1" style="color:var(--green);font-weight:500">Uygulamaya dön →</a>`, 'suc');
   } else {
     alert_(`Geri yükleme tamamlandı · ${tamam} başarılı · ${hataSayisi} hatalı`, 'warn');
   }
