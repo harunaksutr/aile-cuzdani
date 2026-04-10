@@ -1510,12 +1510,23 @@ async function bildirimKontrol() {
 
     // Bu hafta içinde son_odeme_tarihi olan bekleyen taksitler
     const data = await sbGet('installments',
-      `durum=eq.bekliyor&son_odeme_tarihi=lte.${limitStr}&order=son_odeme_tarihi.asc&select=aciklama,tutar,son_odeme_tarihi,uye`
+      `durum=eq.bekliyor&son_odeme_tarihi=lte.${limitStr}&order=son_odeme_tarihi.asc&select=aciklama,tutar,son_odeme_tarihi,uye,kaynak,toplam_taksit,loan_id`
     );
     if (!data.length) return;
 
-    const urgent   = data.filter(t => t.son_odeme_tarihi <= bugunStr);
-    const upcoming = data.filter(t => t.son_odeme_tarihi >  bugunStr);
+    // Ekstre ile izlenen kart taksitleri (garanti/enpara/yapi_kredi, loan_id yok, taksitli)
+    // aylik ekstre yuklendikce otomatik ilerler; "gecikmis" banner'inda gosterme.
+    const bildirimlik = data.filter(t => {
+      const ekstreTakip =
+        ['garanti', 'enpara', 'yapı_kredi'].includes(t.kaynak) &&
+        Number(t.toplam_taksit || 1) > 1 &&
+        !t.loan_id;
+      return !ekstreTakip;
+    });
+    if (!bildirimlik.length) return;
+
+    const urgent   = bildirimlik.filter(t => t.son_odeme_tarihi <= bugunStr);
+    const upcoming = bildirimlik.filter(t => t.son_odeme_tarihi >  bugunStr);
 
     const banner = document.getElementById('bildirimBanner');
     const items  = [];
