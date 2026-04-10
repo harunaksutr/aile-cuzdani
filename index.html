@@ -1371,7 +1371,54 @@ async function butceYukle(){
 }
 async function butceKaydet(){
   const uyeler=['hepsi',..._uyeler.map(u=>u.slug)];
-  try{for(const u of uyeler){const val=document.getElementById('b_'+u)?.value;if(!val||parseFloat(val)<=0)continue;const m=await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);if(m.length){await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef:parseFloat(val),updated_at:new Date().toISOString()});}else{await sbPost('budgets',{ay:secilenAy,uye:u,kategori:'genel',hedef:parseFloat(val)});}}toast('Bütçe kaydedildi');}catch(e){toast('Hata: '+e.message,true);}
+  try{
+    let kaydedilen = 0;
+    for(const u of uyeler){
+      const val = document.getElementById('b_'+u)?.value;
+      const hedef = parseFloat(val);
+      if(!val || !isFinite(hedef) || hedef<=0) continue;
+      const body = { ay: secilenAy, uye: u, kategori: 'genel', hedef, updated_at: new Date().toISOString(), owner_id: authUserId() };
+      let ok = false;
+      let sonHata = null;
+      for(const cols of ['owner_id,ay,uye,kategori','ay,uye,kategori']){
+        try{
+          await sbApiFetch(`${SB_URL}/rest/v1/budgets?on_conflict=${encodeURIComponent(cols)}`, {
+            method:'POST',
+            headers:{ Prefer:'return=representation,resolution=merge-duplicates' },
+            body:JSON.stringify(body)
+          });
+          ok = true;
+          break;
+        }catch(e){
+          sonHata = e;
+        }
+      }
+      if(!ok){
+        const m = await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);
+        if(m.length){
+          await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef,updated_at:new Date().toISOString()});
+          ok = true;
+        }else{
+          try{
+            await sbPost('budgets',{ay:secilenAy,uye:u,kategori:'genel',hedef,updated_at:new Date().toISOString()});
+            ok = true;
+          }catch(e2){
+            sonHata = e2;
+          }
+        }
+      }
+      if(!ok) throw sonHata || new Error('Bütçe kaydı yapılamadı');
+      kaydedilen++;
+    }
+    toast(kaydedilen>0?'Bütçe kaydedildi':'Kaydedilecek hedef yok');
+  }catch(e){
+    const m = String(e.message||'');
+    if(m.includes('budgets_ay_uye_kategori_key') || m.includes('23505')){
+      toast('Bütçe tablosunda eski tekillik var (budgets_ay_uye_kategori_key). Supabase SQL Editor’da `supabase-fix-budgets-unique.sql` dosyasını çalıştır.', true);
+    }else{
+      toast('Hata: '+m,true);
+    }
+  }
 }
 
 // AYARLAR
