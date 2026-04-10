@@ -120,6 +120,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a onclick="showPage('butce')"     id="nav-butce">Bütçe</a>
   <a onclick="showPage('ayarlar')"   id="nav-ayarlar">Ayarlar</a>
   <a href="ekstre.html" style="color:var(--amber)">Ekstre Yükle</a>
+  <a href="backup.html" style="color:var(--muted)">Yedek</a>
   <div class="nav-r" style="display:flex;align-items:center;gap:8px">
     <select class="ay-sel" id="ayS" onchange="ayDegisti()"></select>
     <button onclick="temaToggle()" id="temaBtn" title="Tema" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1">🌙</button>
@@ -139,6 +140,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a onclick="showPage('butce');menuKapat()"     id="mob-butce">Bütçe</a>
   <a onclick="showPage('ayarlar');menuKapat()"   id="mob-ayarlar">Ayarlar</a>
   <a href="ekstre.html" style="color:var(--amber);padding:12px 20px;display:block">Ekstre Yükle</a>
+  <a href="backup.html" style="padding:12px 20px;display:block">💾 Yedek & Geri Yükle</a>
   <div style="padding:8px 16px 4px;display:flex;gap:8px;align-items:center">
     <select class="ay-sel ay-sel-mob" style="flex:1"></select>
     <button onclick="temaToggle()" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1" id="temaBtnMob">🌙</button>
@@ -197,9 +199,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <input type="text" id="sfAra" placeholder="Açıklama ara..." oninput="sonIslemleriFiltrele()" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none;grid-column:1/-1">
         <select id="sfUye" onchange="sonIslemleriFiltrele()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
-          <option value="">Tüm üyeler</option>
-          <option value="harun">Harun</option><option value="aslı">Aslı</option>
-          <option value="zeynep">Zeynep</option><option value="zehra">Zehra</option>
+          <option value="">Yükleniyor...</option>
         </select>
         <select id="sfKat" onchange="sonIslemleriFiltrele()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
           <option value="">Tüm kategoriler</option>
@@ -228,9 +228,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="text" id="filAra" placeholder="Açıklama ara..." oninput="islemleriYukle()" style="grid-column:1/-1;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none">
       <select id="filU" onchange="islemleriYukle()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
-        <option value="">Tüm üyeler</option>
-        <option value="harun">Harun</option><option value="aslı">Aslı</option>
-        <option value="zeynep">Zeynep</option><option value="zehra">Zehra</option>
+        <option value="">Yükleniyor...</option>
       </select>
       <select id="filK" onchange="islemleriYukle()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
         <option value="">Tüm kategoriler</option>
@@ -295,8 +293,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
       </div>
       <div class="fgg"><label>Üye</label>
         <select id="fU">
-          <option value="harun">Harun</option><option value="aslı">Aslı</option>
-          <option value="zeynep">Zeynep</option><option value="zehra">Zehra</option>
+          <option value="">Yükleniyor...</option>
         </select>
       </div>
       <div class="fgg"><label>Notlar</label><input type="text" id="fN"></div>
@@ -321,9 +318,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
           <option value="yapı_kredi">Yapı Kredi</option><option value="nakit">Nakit</option>
         </select>
         <select id="tFilUye" onchange="taksitleriYukle()" style="font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;color:var(--text)">
-          <option value="">Tüm üyeler</option>
-          <option value="harun">Harun</option><option value="aslı">Aslı</option>
-          <option value="zeynep">Zeynep</option><option value="zehra">Zehra</option>
+          <option value="">Yükleniyor...</option>
         </select>
       </div>
     </div>
@@ -349,8 +344,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
         </div>
         <div class="fgg"><label>Üye</label>
           <select id="tU">
-            <option value="harun">Harun</option><option value="aslı">Aslı</option>
-            <option value="zeynep">Zeynep</option><option value="zehra">Zehra</option>
+            <option value="">Yükleniyor...</option>
           </select>
         </div>
         <div class="fgg full" id="tOnizle" style="display:none">
@@ -460,6 +454,16 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <!-- AYARLAR -->
 <div class="page" id="page-ayarlar">
   <div class="card" style="max-width:560px;margin-bottom:12px">
+    <div class="ct">Üye yönetimi</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <input type="text" id="yUyeAd" placeholder="Ad (örn: Harun)" style="flex:1;min-width:120px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;color:var(--text)">
+      <input type="color" id="yUyeRenk" value="#378ADD" title="Renk seç" style="width:40px;height:36px;border:none;border-radius:var(--r);cursor:pointer;background:none;padding:2px">
+      <button class="btn pri" onclick="uyeEkle()">Ekle</button>
+    </div>
+    <div id="uyeL"><div class="loader">Yükleniyor...</div></div>
+  </div>
+
+  <div class="card" style="max-width:560px;margin-bottom:12px">
     <div class="ct">Bildirimler</div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -511,8 +515,56 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
 const HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-const UYE_ADI={harun:'Harun',aslı:'Aslı',zeynep:'Zeynep',zehra:'Zehra'};
-const UYE_RENK={harun:'#378ADD',aslı:'#1D9E75',zeynep:'#EF9F27',zehra:'#D85A30'};
+// Üyeler — Supabase members tablosundan yüklenir
+let _uyeler = [];
+let UYE_ADI  = {};
+let UYE_RENK = {};
+
+async function uyeleriYukle() {
+  try {
+    const data = await sbGet('members','aktif=eq.true&order=sira.asc');
+    _uyeler = data;
+  } catch(e) {
+    _uyeler = [
+      {slug:'harun', ad:'Harun', renk:'#378ADD', sira:1},
+      {slug:'aslı',  ad:'Aslı',  renk:'#1D9E75', sira:2},
+      {slug:'zeynep',ad:'Zeynep',renk:'#EF9F27', sira:3},
+      {slug:'zehra', ad:'Zehra', renk:'#D85A30', sira:4},
+    ];
+  }
+  UYE_ADI  = {};
+  UYE_RENK = {};
+  _uyeler.forEach(u => { UYE_ADI[u.slug]=u.ad; UYE_RENK[u.slug]=u.renk; });
+  uyeSelectleriDoldur();
+}
+
+// Sayfadaki tüm üye <select>'lerini doldur
+function uyeSelectleriDoldur() {
+  const ids = ['sfUye','filU','fU','tU','tFilUye'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const val = el.value;
+    el.innerHTML = '<option value="">Tüm üyeler</option>';
+    _uyeler.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.slug; o.textContent = u.ad;
+      el.appendChild(o);
+    });
+    if (val) el.value = val;
+  });
+  // Ekle formundaki üye select (ilk seçenek boş değil)
+  ['fU','tU'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    _uyeler.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.slug; o.textContent = u.ad;
+      el.appendChild(o);
+    });
+  });
+}
 const KAYNAK_ADI={nakit:'Nakit',havale:'Havale',eft:'EFT',garanti:'Garanti',yapı_kredi:'Yapı Kredi',enpara:'Enpara',
   havale_garanti:'Havale/Garanti',havale_enpara:'Havale/Enpara',havale_yapı_kredi:'Havale/YapıKredi',havale_kuveyt_turk:'Havale/Kuveyt',havale_vakıfbank:'Havale/Vakıf',havale_ziraat:'Havale/Ziraat',havale_qnb_finansbank:'Havale/QNB',havale_akbank:'Havale/Akbank',havale_is_bankasi:'Havale/İşBankası',havale_halkbank:'Havale/Halkbank',havale_teb:'Havale/TEB',havale_denizbank:'Havale/Denizbank',havale_ing_bank:'Havale/ING',havale_hsbc:'Havale/HSBC',havale_albaraka:'Havale/Albaraka',havale_turkiye_finans:'Havale/TürkiyeFinans',havale_fibabanka:'Havale/Fiba',havale_sekerbank:'Havale/Şeker',havale_odeabank:'Havale/Odea',havale_nkolay:'Havale/Nkolay',
   eft_garanti:'EFT/Garanti',eft_enpara:'EFT/Enpara',eft_yapı_kredi:'EFT/YapıKredi',eft_kuveyt_turk:'EFT/Kuveyt',eft_vakıfbank:'EFT/Vakıf',eft_ziraat:'EFT/Ziraat',eft_qnb_finansbank:'EFT/QNB',eft_akbank:'EFT/Akbank',eft_is_bankasi:'EFT/İşBankası',eft_halkbank:'EFT/Halkbank',eft_teb:'EFT/TEB',eft_denizbank:'EFT/Denizbank',eft_ing_bank:'EFT/ING',eft_hsbc:'EFT/HSBC',eft_albaraka:'EFT/Albaraka',eft_turkiye_finans:'EFT/TürkiyeFinans',eft_fibabanka:'EFT/Fiba',eft_sekerbank:'EFT/Şeker',eft_odeabank:'EFT/Odea',eft_nkolay:'EFT/Nkolay'};
@@ -635,7 +687,7 @@ function uyeGoster(txn){
   const dark=document.body.classList.contains('dark');
   const grid=dark?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)';
   const tick=dark?'#9e9c94':'#73726c';
-  const uyeler=['harun','aslı','zeynep','zehra'];
+  const uyeler=_uyeler.map(u=>u.slug);
   const vals=uyeler.map(u=>txn.filter(r=>r.uye===u).reduce((s,r)=>s+Number(r.tutar),0));
   if(uyeC)uyeC.destroy();
   uyeC=new Chart(document.getElementById('uyeChart'),{type:'bar',data:{labels:uyeler.map(u=>UYE_ADI[u]),datasets:[{data:vals,backgroundColor:uyeler.map(u=>UYE_RENK[u]),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+formatPara(c.parsed.x)}}},scales:{x:{grid:{color:grid},ticks:{color:tick,font:{size:11},callback:v=>(v/1000).toFixed(0)+'B'},border:{display:false}},y:{grid:{display:false},ticks:{color:tick,font:{size:12}},border:{display:false}}}}});
@@ -961,7 +1013,7 @@ async function krediEkle(){
           aciklama:`${ad} — ${taksitNo}/${toplamTaksit}. taksit`,
           tutar:aylikTaksit,
           kaynak:banka,
-          uye:'harun',
+          uye:(_uyeler[0]?.slug||'harun'),
           toplam_taksit:toplamTaksit,
           kalan_taksit:kalanTaksit-i,
           taksit_no:taksitNo,
@@ -1011,14 +1063,14 @@ async function butceYukle(){
   document.getElementById('butceL').innerHTML='<div class="loader">Yükleniyor...</div>';
   try{
     const data=await sbGet('budgets',`ay=eq.${secilenAy}`);
-    const uyeler=['hepsi','harun','aslı','zeynep','zehra'];
+    const uyeler=['hepsi',..._uyeler.map(u=>u.slug)];
     document.getElementById('butceL').innerHTML=`<p style="font-size:12px;color:var(--muted);margin-bottom:14px">${ayAdi(secilenAy)} bütçe hedefleri</p>
       <table style="min-width:200px"><thead><tr><th>Üye</th><th style="text-align:right">Hedef (₺)</th></tr></thead>
       <tbody>${uyeler.map(u=>{const m=data.find(r=>r.uye===u&&r.kategori==='genel');return`<tr><td>${u==='hepsi'?'Hane toplamı':UYE_ADI[u]||u}</td><td style="text-align:right"><input type="number" id="b_${u}" value="${m?m.hedef:''}" placeholder="0" step="100" style="width:130px;text-align:right;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:13px;color:var(--text)"></td></tr>`;}).join('')}</tbody></table>`;
   }catch(e){document.getElementById('butceL').innerHTML=`<div class="loader" style="color:var(--red)">Hata: ${e.message}</div>`;}
 }
 async function butceKaydet(){
-  const uyeler=['hepsi','harun','aslı','zeynep','zehra'];
+  const uyeler=['hepsi',..._uyeler.map(u=>u.slug)];
   try{for(const u of uyeler){const val=document.getElementById('b_'+u)?.value;if(!val||parseFloat(val)<=0)continue;const m=await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);if(m.length){await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef:parseFloat(val),updated_at:new Date().toISOString()});}else{await sbPost('budgets',{ay:secilenAy,uye:u,kategori:'genel',hedef:parseFloat(val)});}}toast('Bütçe kaydedildi');}catch(e){toast('Hata: '+e.message,true);}
 }
 
@@ -1028,6 +1080,7 @@ async function ayarlarYukle(){
   try{
     await kategorileriYukle();
     katListesiGoster();
+    uyeListesiGoster();
   }catch(e){
     document.getElementById('katL').innerHTML=`<div class="loader" style="color:var(--red)">Hata: ${e.message}</div>`;
   }
@@ -1200,12 +1253,68 @@ if ('serviceWorker' in navigator) {
 }
 // ──────────────────────────────────────────────────────────────────
 
+// ÜYELER
+async function uyeListesiGoster() {
+  const el = document.getElementById('uyeL');
+  if (!el) return;
+  if (!_uyeler.length) { el.innerHTML='<div class="loader">Üye yok</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>#</th><th>Üye</th><th>Renk</th><th></th></tr></thead>
+    <tbody>${_uyeler.map((u,i) => `<tr class="tr-h">
+      <td class="mu">${u.sira}</td>
+      <td style="display:flex;align-items:center;gap:8px;padding:9px 8px">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${u.renk};flex-shrink:0"></span>
+        ${u.ad}
+      </td>
+      <td><input type="color" value="${u.renk}" onchange="uyeRenkGuncelle('${u.id}',this.value,'${u.slug}')" style="width:32px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:1px"></td>
+      <td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="uyeSil('${u.id}','${u.ad}')">Sil</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function uyeEkle() {
+  const ad = document.getElementById('yUyeAd').value.trim();
+  const renk = document.getElementById('yUyeRenk').value;
+  if (!ad) { toast('Üye adı girin', true); return; }
+  const slug = ad.toLowerCase()
+    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+    .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+    .replace(/[^a-z0-9]/g,'_');
+  const sira = _uyeler.length + 1;
+  try {
+    await sbPost('members', {slug, ad, renk, sira, aktif: true});
+    toast('Üye eklendi: ' + ad);
+    document.getElementById('yUyeAd').value = '';
+    await uyeleriYukle();
+    uyeListesiGoster();
+  } catch(e) { toast('Hata: ' + e.message, true); }
+}
+
+async function uyeRenkGuncelle(id, renk, slug) {
+  try {
+    await sbPatch('members', `id=eq.${id}`, {renk});
+    _uyeler.forEach(u => { if(u.id===id) u.renk=renk; });
+    UYE_RENK[slug] = renk;
+    toast('Renk güncellendi');
+  } catch(e) { toast('Hata: ' + e.message, true); }
+}
+
+async function uyeSil(id, ad) {
+  if (!confirm(`"${ad}" silinsin mi? Bu üyeye ait işlemler etkilenmez.`)) return;
+  try {
+    await sbPatch('members', `id=eq.${id}`, {aktif: false});
+    toast('Üye kaldırıldı: ' + ad);
+    await uyeleriYukle();
+    uyeListesiGoster();
+  } catch(e) { toast('Hata: ' + e.message, true); }
+}
+
 // BAŞLANGIÇ
 temaBaslat();
 document.getElementById('fT').value=bugunTarih();
 document.getElementById('tD').value=bugunTarih();
 aySeciciDoldur();
-kategorileriYukle().then(()=>{dashboardYukle();bildirimKontrol();pushDurumGoster();});
+uyeleriYukle().then(()=>kategorileriYukle()).then(()=>{dashboardYukle();bildirimKontrol();pushDurumGoster();});
 </script>
 </body>
 </html>
