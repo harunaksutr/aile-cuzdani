@@ -109,8 +109,42 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   .mv{font-size:17px}
 }
 </style>
+<link rel="stylesheet" href="styles/auth.css">
 </head>
 <body>
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+    <h1>Aile Cuzdani</h1>
+    <p id="authSubtitle">Hesabinla giris yap veya yeni hesap olustur.</p>
+    <div class="auth-tabs">
+      <button id="tabLogin" class="active" onclick="authTabDegistir('login')">Giris</button>
+      <button id="tabSignup" onclick="authTabDegistir('signup')">Kayit Ol</button>
+    </div>
+    <div class="auth-form">
+      <label>E-posta</label>
+      <input id="authEmail" type="email" placeholder="ornek@mail.com">
+      <label>Sifre</label>
+      <input id="authPassword" type="password" placeholder="En az 6 karakter">
+      <button class="auth-submit" id="authSubmitBtn" onclick="authDevam()">Giris Yap</button>
+      <p id="authMessage" class="auth-message"></p>
+    </div>
+  </div>
+</div>
+
+<div id="setupGate" class="auth-gate" style="display:none">
+  <div class="auth-card">
+    <h2>Ilk Kurulum</h2>
+    <p>Hesabin hazir. Ilk kullanimin icin temel uyeler ve kategoriler olusturalim.</p>
+    <div class="auth-form">
+      <label>Birinci uye adi</label>
+      <input id="setupMember1" type="text" value="Ben">
+      <label>Ikinci uye adi (opsiyonel)</label>
+      <input id="setupMember2" type="text" placeholder="Es / Cocuk / Ortak">
+      <button class="auth-submit" onclick="ilkKurulumuTamamla()">Kurulumu Tamamla</button>
+      <p id="setupMessage" class="auth-message"></p>
+    </div>
+  </div>
+</div>
 <nav>
   <div class="brand">Aile Cüzdanı</div>
   <a onclick="showPage('dashboard')" id="nav-dashboard" class="active">Dashboard</a>
@@ -123,6 +157,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a href="backup.html" style="color:var(--muted)">Yedek</a>
   <div class="nav-r" style="display:flex;align-items:center;gap:8px">
     <select class="ay-sel" id="ayS" onchange="ayDegisti()"></select>
+    <button onclick="cikisYap()" title="Cikis" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:12px;color:var(--muted);line-height:1">Cikis</button>
     <button onclick="temaToggle()" id="temaBtn" title="Tema" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1">🌙</button>
   </div>
   <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menü">
@@ -514,7 +549,87 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
+let _authMode = 'login';
+
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function authHeaders(){
+  const token = authToken() || SB_KEY;
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+function ownerFilter(table,p=''){
+  if(!OWNER_TABLES.has(table)) return p;
+  const uid = authUserId();
+  const own = `owner_id=eq.${encodeURIComponent(uid)}`;
+  return p ? `${p}&${own}` : own;
+}
+async function authIstek(path, body){
+  const r = await fetch(`${SB_URL}/auth/v1/${path}`, {
+    method: 'POST',
+    headers: {'apikey': SB_KEY, 'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  const data = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(data?.msg || data?.error_description || 'Kimlik dogrulama hatasi');
+  return data;
+}
+function authMesaj(msg, err=false){
+  const el = document.getElementById('authMessage');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.style.color = err ? '#E24B4A' : '';
+}
+function setupMesaj(msg, err=false){
+  const el = document.getElementById('setupMessage');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.style.color = err ? '#E24B4A' : '';
+}
+function authTabDegistir(mode){
+  _authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
+  document.getElementById('tabSignup').classList.toggle('active', mode==='signup');
+  document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Giris Yap' : 'Hesap Olustur';
+  authMesaj('');
+}
+function authOturumKaydet(data){
+  localStorage.setItem('ac_access_token', data.access_token || '');
+  localStorage.setItem('ac_refresh_token', data.refresh_token || '');
+  localStorage.setItem('ac_user_id', data.user?.id || '');
+}
+async function authDevam(){
+  const email = (document.getElementById('authEmail')?.value || '').trim();
+  const password = document.getElementById('authPassword')?.value || '';
+  if(!email || !password){ authMesaj('E-posta ve sifre zorunlu.', true); return; }
+  try{
+    authMesaj(_authMode==='login' ? 'Giris yapiliyor...' : 'Hesap olusturuluyor...');
+    if(_authMode === 'signup'){
+      await authIstek('signup', { email, password });
+    }
+    const loginData = await authIstek('token?grant_type=password', { email, password });
+    authOturumKaydet(loginData);
+    document.getElementById('authGate').style.display='none';
+    await uygulamaBaslat();
+  }catch(e){
+    authMesaj(e.message, true);
+  }
+}
+async function cikisYap(){
+  localStorage.removeItem('ac_access_token');
+  localStorage.removeItem('ac_refresh_token');
+  localStorage.removeItem('ac_user_id');
+  location.reload();
+}
+function slugYap(text){
+  return (text||'')
+    .toLowerCase()
+    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+    .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+    .replace(/[^a-z0-9]/g,'_')
+    .replace(/_+/g,'_')
+    .replace(/^_|_$/g,'');
+}
 // Üyeler — Supabase members tablosundan yüklenir
 let _uyeler = [];
 let UYE_ADI  = {};
@@ -574,10 +689,10 @@ function kaynakAdi(k){return KAYNAK_ADI[k]||k;}
 
 let secilenAy=bugunAy(),_kategoriler=[],trendC,catC,uyeC;
 
-async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:HEADERS});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbPost(t,b){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:HEADERS,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbPatch(t,p,b){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{method:'PATCH',headers:HEADERS,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbDelete(t,p){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbGet(t,p=''){const q=ownerFilter(t,p);const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:authHeaders()});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbPost(t,b){const body=OWNER_TABLES.has(t)?{...b,owner_id:authUserId()}:b;const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:authHeaders(),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbPatch(t,p,b){const q=ownerFilter(t,p);const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'PATCH',headers:authHeaders(),body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbDelete(t,p){const q=ownerFilter(t,p);const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'DELETE',headers:authHeaders()});if(!r.ok)throw new Error(await r.text());return r.json();}
 
 function bugunAy(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function bugunTarih(){return new Date().toISOString().split('T')[0];}
@@ -1309,12 +1424,110 @@ async function uyeSil(id, ad) {
   } catch(e) { toast('Hata: ' + e.message, true); }
 }
 
+async function ilkKurulumGerekliMi(){
+  try{
+    const [members, cats] = await Promise.all([
+      sbGet('members','limit=1'),
+      sbGet('categories','limit=1')
+    ]);
+    return !members.length || !cats.length;
+  }catch(e){
+    throw new Error('Kurulum kontrolu basarisiz: ' + e.message);
+  }
+}
+async function ilkKurulumuTamamla(){
+  const m1 = (document.getElementById('setupMember1')?.value || '').trim();
+  const m2 = (document.getElementById('setupMember2')?.value || '').trim();
+  if(!m1){ setupMesaj('En az bir uye adi gerekli.', true); return; }
+  try{
+    setupMesaj('Kurulum yapiliyor...');
+    const defaults = [
+      {ad:'market',renk:'#378ADD',sira:1},
+      {ad:'fatura',renk:'#1D9E75',sira:2},
+      {ad:'restoran',renk:'#EF9F27',sira:3},
+      {ad:'ulasim',renk:'#D85A30',sira:4},
+      {ad:'saglik',renk:'#7F77DD',sira:5},
+      {ad:'diger',renk:'#888780',sira:6}
+    ];
+    let mevcutKat = [];
+    let mevcutUye = [];
+    try{ mevcutKat = await sbGet('categories','select=ad'); }catch(_){}
+    try{ mevcutUye = await sbGet('members','select=slug'); }catch(_){}
+    const varOlanAd = new Set((mevcutKat||[]).map(r=>r.ad));
+    const varOlanSlug = new Set((mevcutUye||[]).map(r=>r.slug));
+    for (const c of defaults){
+      if(varOlanAd.has(c.ad)) continue;
+      try{ await sbPost('categories', c); varOlanAd.add(c.ad); }
+      catch(err){
+        const msg = (err && err.message) ? String(err.message) : String(err);
+        if(msg.includes('23505')||msg.includes('duplicate')) continue;
+        throw err;
+      }
+    }
+    let katSay = 0;
+    try{ katSay = (await sbGet('categories','select=id')).length; }catch(_){}
+    if(katSay === 0){
+      setupMesaj('Kategoriler eklenemedi: veritabaninda ad tum kullanicilar icin tekil (categories_ad_key). Supabase SQL Editor\'da supabase-fix-categories-unique.sql calistir.', true);
+      return;
+    }
+    const uyeler = [m1, m2].filter(Boolean);
+    for (let i = 0; i < uyeler.length; i++){
+      const ad = uyeler[i];
+      const slug = slugYap(ad);
+      if(!slug){ continue; }
+      if(varOlanSlug.has(slug)) continue;
+      try{
+        await sbPost('members', { slug, ad, renk: i===0 ? '#378ADD' : '#1D9E75', sira: i+1, aktif:true });
+        varOlanSlug.add(slug);
+      }catch(err){
+        const msg = (err && err.message) ? String(err.message) : String(err);
+        if(msg.includes('23505')||msg.includes('duplicate')) continue;
+        throw err;
+      }
+    }
+    document.getElementById('setupGate').style.display='none';
+    await uygulamaBaslat(true);
+  }catch(e){
+    setupMesaj(e.message, true);
+  }
+}
+async function uygulamaBaslat(skipSetupCheck=false){
+  temaBaslat();
+  document.getElementById('fT').value=bugunTarih();
+  document.getElementById('tD').value=bugunTarih();
+  aySeciciDoldur();
+  if(!skipSetupCheck){
+    const setup = await ilkKurulumGerekliMi();
+    if(setup){
+      document.getElementById('setupGate').style.display='flex';
+      return;
+    }
+  }
+  await uyeleriYukle();
+  await kategorileriYukle();
+  dashboardYukle();
+  bildirimKontrol();
+  pushDurumGoster();
+}
+async function authBaslat(){
+  const token = authToken();
+  if(!token){
+    document.getElementById('authGate').style.display='flex';
+    return;
+  }
+  try{
+    await uygulamaBaslat();
+  }catch(e){
+    localStorage.removeItem('ac_access_token');
+    localStorage.removeItem('ac_refresh_token');
+    localStorage.removeItem('ac_user_id');
+    authMesaj(e.message, true);
+    document.getElementById('authGate').style.display='flex';
+  }
+}
+
 // BAŞLANGIÇ
-temaBaslat();
-document.getElementById('fT').value=bugunTarih();
-document.getElementById('tD').value=bugunTarih();
-aySeciciDoldur();
-uyeleriYukle().then(()=>kategorileriYukle()).then(()=>{dashboardYukle();bildirimKontrol();pushDurumGoster();});
+authBaslat();
 </script>
 </body>
 </html>
