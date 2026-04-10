@@ -498,13 +498,25 @@ async function kaydet() {
           // Mevcut taksiti güncelle: bu ay ödendi olarak işaretle
           // (ekstre'deki işlem o ay ödenmiş demek = bu taksit geçti)
           const tId = tMevcut[0].id;
-          const detay = await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}&owner_id=eq.${encodeURIComponent(authUserId())}&select=kalan_taksit`, { headers: apiHeaders() });
+          const detay = await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}&owner_id=eq.${encodeURIComponent(authUserId())}&select=kalan_taksit,son_odeme_tarihi,taksit_no,toplam_taksit`, { headers: apiHeaders() });
           const detayData = await detay.json();
           if (detayData.length > 0) {
-            const yk = Math.max(0, detayData[0].kalan_taksit - 1);
+            const cur = detayData[0];
+            const yk = Math.max(0, Number(cur.kalan_taksit || 0) - 1);
+            const patch = { kalan_taksit: yk, durum: yk <= 0 ? 'odendi' : 'bekliyor' };
+            if (yk > 0) {
+              const sonraki = new Date(((cur.son_odeme_tarihi || r.tarih) + 'T12:00:00'));
+              if (!isNaN(sonraki.getTime())) {
+                sonraki.setMonth(sonraki.getMonth() + 1);
+                patch.son_odeme_tarihi = sonraki.toISOString().split('T')[0];
+              }
+              const mevcutNo = Number(cur.taksit_no || r.taksit_no || 1);
+              const toplam = Number(cur.toplam_taksit || r.toplam_taksit || mevcutNo);
+              patch.taksit_no = Math.min(toplam, mevcutNo + 1);
+            }
             await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}`, {
               method: 'PATCH', headers: apiHeaders(),
-              body: JSON.stringify({ kalan_taksit: yk, durum: yk <= 0 ? 'odendi' : 'bekliyor' })
+              body: JSON.stringify(patch)
             });
           }
         } else {
