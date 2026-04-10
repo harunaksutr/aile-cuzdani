@@ -167,6 +167,37 @@ function kategoriTahmin(aciklama) {
   return 'diğer';
 }
 
+// Ekstre: elle seçilen kategorileri hatırla (hesap bazlı)
+function ekstreKatLsKey(){ return 'ac_ekstre_kat_map_' + (authUserId() || 'local'); }
+function ekstreKatAnahtar(aciklama){
+  return String(aciklama || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 220);
+}
+function ekstreKatMapOku(){
+  try { return JSON.parse(localStorage.getItem(ekstreKatLsKey()) || '{}'); } catch (_) { return {}; }
+}
+function ekstreKatMapKaydet(aciklama, kategori){
+  const key = ekstreKatAnahtar(aciklama);
+  if (!key || !kategori) return;
+  const m = ekstreKatMapOku();
+  m[key] = kategori;
+  const keys = Object.keys(m);
+  if (keys.length > 400) {
+    for (let i = 0; i < keys.length - 400; i++) delete m[keys[i]];
+  }
+  localStorage.setItem(ekstreKatLsKey(), JSON.stringify(m));
+}
+function ekstreKatHatirlaUygula(aciklama, varsayilan){
+  const m = ekstreKatMapOku();
+  const mKey = ekstreKatAnahtar(aciklama);
+  if (m[mKey] && kategoriler.includes(m[mKey])) return m[mKey];
+  return varsayilan;
+}
+function ekstreKategoriDegisti(i, kat){
+  if (!parseEdilenIslemler[i]) return;
+  parseEdilenIslemler[i].kategori = kat;
+  ekstreKatMapKaydet(parseEdilenIslemler[i].aciklama, kat);
+}
+
 function log(msg) { document.getElementById('log').textContent = msg; }
 
 // Drag & drop
@@ -258,7 +289,7 @@ function parseEtGaranti(metin) {
     if (taksitMatch) { toplamTaksit=parseInt(taksitMatch[2]); taksitNo=parseInt(taksitMatch[3]); kalanTaksit=toplamTaksit-taksitNo+1; }
     let aciklama = kalan.replace(taksitRe,'').replace(tutarRe,'').replace(/\s+\d+\s*$/,'').replace(/\s{2,}/g,' ').trim();
     if (!aciklama || aciklama.length < 2) continue;
-    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
+    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:ekstreKatHatirlaUygula(aciklama,kategoriTahmin(aciklama)), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
   }
   sonucGoster(islemler);
 }
@@ -330,7 +361,7 @@ function parseEtEnpara(metin) {
       toplam_taksit: toplamTaksit,
       kalan_taksit:  kalanTaksit,
       taksit_no:     taksitNo,
-      kategori: kategoriTahmin(aciklama),
+      kategori: ekstreKatHatirlaUygula(aciklama, kategoriTahmin(aciklama)),
       kaynak: 'enpara',
       uye: (uyeler[0]?.slug||'harun'),
       secili: true
@@ -359,7 +390,7 @@ function sonucGoster(islemler) {
     <div class="stat-item"><div class="sl">Toplam tutar</div><div class="sv">${toplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div></div>
     <div class="stat-item"><div class="sl">Taksitli</div><div class="sv">${taksitli}</div></div>`;
 
-  document.getElementById('alertBox').innerHTML = `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
+  document.getElementById('alertBox').innerHTML = `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç. Aynı açıklama için daha önce seçtiğin kategori otomatik uygulanır.</div>`;
   tabloGoster();
   document.getElementById('previewCard').style.display = 'block';
   document.getElementById('uploadCard').style.display = 'none';
@@ -374,7 +405,7 @@ function tabloGoster() {
       <td>${r.aciklama}${r.toplam_taksit>1?` <span style="font-size:11px;color:var(--muted)">(${r.taksit_no}/${r.toplam_taksit})</span>`:''}</td>
       <td>${r.toplam_taksit>1?'<span class="badge taksit">Taksitli</span>':'<span class="badge normal">Normal</span>'}</td>
       <td>
-        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].kategori=this.value">
+        <select class="cat-sel" onchange="ekstreKategoriDegisti(${i},this.value)">
           ${kategoriler.map(k=>`<option value="${k}" ${k===r.kategori?'selected':''}>${k}</option>`).join('')}
         </select>
       </td>
@@ -458,6 +489,7 @@ async function kaydet() {
         }
       }
       basarili++;
+      ekstreKatMapKaydet(r.aciklama, r.kategori);
     } catch(e) { hata++; }
   }
 
