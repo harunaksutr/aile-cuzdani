@@ -332,20 +332,40 @@ function parseEtEnpara(metin) {
     const tutar = parseFloat(tutarStr);
     if (isNaN(tutar) || tutar <= 0) continue;
 
-    // Taksit bilgisi
-    const taksitMatch = kalan.match(taksitRe);
-    let toplamTaksit=1, kalanTaksit=1, taksitNo=1;
+    // Taksit: DD/MM/YYYY ve benzeri tarih parçaları "12/03" gibi yanlış taksit sanılmasın
+    const kalanTaksitIcin = kalan
+      .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, ' ')
+      .replace(/\b\d{4}\/\d{1,2}\/\d{1,2}\b/g, ' ');
+    let taksitMatch = kalanTaksitIcin.match(taksitRe);
+    let toplamTaksit = 1, kalanTaksit = 1, taksitNo = 1;
     if (taksitMatch) {
-      taksitNo     = parseInt(taksitMatch[1]);
-      toplamTaksit = parseInt(taksitMatch[2]);
-      kalanTaksit  = toplamTaksit - taksitNo + 1;
+      const a = parseInt(taksitMatch[1], 10);
+      const b = parseInt(taksitMatch[2], 10);
+      const gecerli = a >= 1 && a <= b && b >= 2 && b <= 60;
+      const tarihAdayi = a > b && b <= 12 && a <= 31;
+      if (gecerli && !tarihAdayi) {
+        taksitNo = a;
+        toplamTaksit = b;
+        kalanTaksit = toplamTaksit - taksitNo + 1;
+      } else {
+        taksitMatch = null;
+      }
     }
 
-    // Açıklama temizle — parantez içleri, taksit, tutar kaldır
+    // Açıklama temizle — geçerli taksitse x/y kaldır (aksi halde tarih parçası silinmesin)
     let aciklama = kalan
       .replace(/\([^)]*\)/g, '')
-      .replace(tutarRe, '')
-      .replace(taksitRe, '')
+      .replace(tutarRe, '');
+    if (toplamTaksit > 1) aciklama = aciklama.replace(taksitRe, '');
+    aciklama = aciklama
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    // Banka etiketleri (PDF'te işlem satırında kalabiliyor)
+    aciklama = aciklama
+      .replace(/\bGECİKMİŞ\b/gi, '')
+      .replace(/\bGECIKMIS\b/gi, '')
+      .replace(/\bGEÇİKMİŞ\b/gi, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
 
