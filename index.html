@@ -1660,6 +1660,8 @@ async function uyeEkle() {
     if (m.includes('23505') || m.includes('members_slug')) {
       if (rpcYok) {
         toast('Üye eklemek için Supabase → SQL Editor’da `supabase-fix-members-upsert-rls.sql` dosyasını aynı projede bir kez çalıştırın (REST şu an `ac_member_upsert` fonksiyonunu bulamıyor).', true);
+      } else if (m.includes('members_slug_key')) {
+        toast('Üye tablosunda `slug` tüm hesaplar için tekil tanımlı (members_slug_key). SQL dosyasının en üstündeki 0) bölümünü çalıştırın: tekillik (owner_id, slug) olmalı.', true);
       } else {
         toast('Aynı isimde kayıt var; güncelleme engellendi. SQL dosyasını tekrar çalıştırın veya Table Editor’da aynı slug satırını düzeltin. Teknik: ' + m.slice(0, 220), true);
       }
