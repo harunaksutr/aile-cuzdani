@@ -143,7 +143,19 @@ input[type=file]{display:none}
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function apiHeaders(){
+  const token = authToken() || SB_KEY;
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+function ownerFilter(table,p=''){
+  if(!OWNER_TABLES.has(table)) return p;
+  const own = `owner_id=eq.${encodeURIComponent(authUserId())}`;
+  return p ? `${p}&${own}` : own;
+}
+if(!authToken()){ location.href = 'index.html'; }
 
 const TABLOLAR = [
   {key:'transactions', ad:'İşlemler',     ikon:'💳'},
@@ -163,8 +175,8 @@ async function sbGetAll(tablo) {
   let tumu = [], offset = 0, limit = 1000;
   while (true) {
     const r = await fetch(
-      `${SB_URL}/rest/v1/${tablo}?order=id.asc&limit=${limit}&offset=${offset}`,
-      {headers: H}
+      `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,`order=id.asc&limit=${limit}&offset=${offset}`)}`,
+      {headers: apiHeaders()}
     );
     if (!r.ok) throw new Error(`${tablo}: ${await r.text()}`);
     const data = await r.json();
@@ -177,18 +189,19 @@ async function sbGetAll(tablo) {
 
 async function sbUpsert(tablo, rows) {
   if (!rows.length) return;
+  const payload = OWNER_TABLES.has(tablo) ? rows.map(r => ({...r, owner_id: authUserId()})) : rows;
   const r = await fetch(`${SB_URL}/rest/v1/${tablo}`, {
     method: 'POST',
-    headers: {...H, 'Prefer': 'resolution=merge-duplicates,return=representation'},
-    body: JSON.stringify(rows)
+    headers: {...apiHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation'},
+    body: JSON.stringify(payload)
   });
   if (!r.ok) throw new Error(`${tablo}: ${await r.text()}`);
 }
 
 async function sbSayim(tablo) {
   const r = await fetch(
-    `${SB_URL}/rest/v1/${tablo}?select=id&limit=1`,
-    {headers: {...H, 'Prefer': 'count=exact'}}
+    `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'select=id&limit=1')}`,
+    {headers: {...apiHeaders(), 'Prefer': 'count=exact'}}
   );
   const cr = r.headers.get('content-range') || '0/0';
   return parseInt(cr.split('/')[1]) || 0;
@@ -465,15 +478,15 @@ function temizleTumunuSec(sec) {
 
 async function sbTemizle(tablo) {
   // Supabase REST: tüm satırları sil — id != '' filtresi gerekli (boş DELETE = 400)
-  const r = await fetch(`${SB_URL}/rest/v1/${tablo}?id=neq.00000000-0000-0000-0000-000000000000`, {
+  const r = await fetch(`${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'id=neq.00000000-0000-0000-0000-000000000000')}`, {
     method: 'DELETE',
-    headers: H
+    headers: apiHeaders()
   });
   // text id'ler için farklı bir pattern
   if (!r.ok) {
     // text PK için tekrar dene
-    const r2 = await fetch(`${SB_URL}/rest/v1/${tablo}?id=like.*`, {
-      method: 'DELETE', headers: H
+    const r2 = await fetch(`${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'id=like.*')}`, {
+      method: 'DELETE', headers: apiHeaders()
     });
     if (!r2.ok) throw new Error(await r2.text());
   }
