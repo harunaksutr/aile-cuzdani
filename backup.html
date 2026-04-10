@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yedek — Aile Cüzdanı</title>
+<style>
+:root{--bg:#f5f5f3;--card:#fff;--border:rgba(0,0,0,.08);--text:#1a1a18;--muted:#73726c;--blue:#378ADD;--green:#1D9E75;--amber:#EF9F27;--red:#E24B4A;--r:10px;--rl:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--card:#272725;--border:rgba(255,255,255,.08);--text:#e8e6de;--muted:#888780}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;padding:20px;max-width:700px;margin:0 auto}
+h2{font-size:18px;font-weight:500;margin-bottom:4px}
+.sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.card{background:var(--card);border:.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:16px}
+.ct{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--bg)}.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.pri:hover{opacity:.9}
+.btn.suc{background:var(--green);color:#fff;border-color:var(--green)}.btn.suc:hover{opacity:.9}
+.btn.dan{color:var(--red);border-color:rgba(226,75,74,.3)}.btn.dan:hover{background:rgba(226,75,74,.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
+.back-btn:hover{color:var(--text)}
+.tbl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.tbl-item{background:var(--bg);border-radius:var(--r);border:.5px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s}
+.tbl-item:hover{border-color:var(--blue)}
+.tbl-item.selected{border-color:var(--blue);background:rgba(55,138,221,.06)}
+.tbl-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--blue);flex-shrink:0}
+.tbl-info{flex:1}
+.tbl-name{font-size:13px;font-weight:500}
+.tbl-cnt{font-size:11px;color:var(--muted);margin-top:1px}
+.progress-wrap{margin:12px 0}
+.progress{background:var(--border);border-radius:4px;height:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .3s}
+.log{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px;line-height:1.6}
+.alert{padding:10px 14px;border-radius:var(--r);font-size:13px;margin-bottom:12px}
+.alert.info{background:rgba(55,138,221,.1);color:var(--blue);border:.5px solid rgba(55,138,221,.3)}
+.alert.suc{background:rgba(29,158,117,.1);color:var(--green);border:.5px solid rgba(29,158,117,.3)}
+.alert.err{background:rgba(226,75,74,.1);color:var(--red);border:.5px solid rgba(226,75,74,.3)}
+.alert.warn{background:rgba(239,159,39,.1);color:var(--amber);border:.5px solid rgba(239,159,39,.3)}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:border-color .2s}
+.drop-zone:hover,.drop-zone.over{border-color:var(--blue)}
+.drop-zone p{color:var(--muted);font-size:13px;margin-top:6px}
+input[type=file]{display:none}
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.stat{background:var(--bg);border-radius:var(--r);padding:10px 14px;flex:1;min-width:100px}
+.stat .sl{font-size:11px;color:var(--muted);margin-bottom:2px}
+.stat .sv{font-size:18px;font-weight:500}
+.conflict-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.conflict-item:last-child{border-bottom:none}
+@media(max-width:500px){.tbl-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<a class="back-btn" href="index.html">← Uygulamaya dön</a>
+<h2>💾 Yedek & Geri Yükleme</h2>
+<p class="sub">Tüm verilerini JSON formatında indir veya önceki bir yedeği geri yükle.</p>
+
+<div id="alertBox"></div>
+
+<!-- EXPORT -->
+<div class="card">
+  <div class="ct">Dışa Aktar (Export)</div>
+  <div class="tbl-grid" id="exportTables"></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="tumunuSec(true)">Tümünü seç</span>
+    <span style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="tumunuSec(false)">Temizle</span>
+  </div>
+  <div class="progress-wrap" id="exportProgress" style="display:none">
+    <div class="progress"><div class="progress-fill" id="exportBar" style="width:0%"></div></div>
+    <div class="log" id="exportLog"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn suc" id="exportBtn" onclick="exportBaslat()">⬇ Yedek Al</button>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div class="card">
+  <div class="ct">İçe Aktar (Import)</div>
+  <div class="alert warn" style="margin-bottom:12px">
+    ⚠ Geri yükleme mevcut verilerin <strong>üzerine yazar</strong>. Önce yedek almayı unutma.
+  </div>
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div style="font-size:28px">📂</div>
+    <strong>JSON yedek dosyasını buraya sürükle veya tıkla</strong>
+    <p>aile-cuzdani-yedek-*.json</p>
+  </div>
+  <input type="file" id="fileInput" accept=".json" onchange="importDosyaOku(this.files[0])">
+
+  <!-- Import önizleme -->
+  <div id="importOnizle" style="display:none;margin-top:16px">
+    <div class="stat-row" id="importStat"></div>
+    <div id="importTablolar"></div>
+    <div class="progress-wrap" id="importProgress" style="display:none">
+      <div class="progress"><div class="progress-fill" id="importBar" style="width:0%"></div></div>
+      <div class="log" id="importLog"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn dan" id="importBtn" onclick="importBaslat()">⬆ Geri Yükle</button>
+      <button class="btn" onclick="importSifirla()">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- GEÇMİŞ -->
+<div class="card">
+  <div class="ct">Son Yedekler</div>
+  <div id="gecmisL"><div style="font-size:13px;color:var(--muted)">Yükleniyor...</div></div>
+</div>
+
+<!-- TEMİZLE -->
+<div class="card" style="border-color:rgba(226,75,74,.3)">
+  <div class="ct" style="color:var(--red)">⚠ Tehlikeli Bölge — İçeriği Temizle</div>
+  <div class="alert err" style="margin-bottom:14px">
+    Bu işlem <strong>geri alınamaz</strong>. Seçili tablolardaki tüm kayıtlar kalıcı olarak silinir. 
+    Devam etmeden önce mutlaka <strong>yedek al</strong>.
+  </div>
+  <div class="tbl-grid" id="temizleTables"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--red);cursor:pointer;text-decoration:underline" onclick="temizleTumunuSec(true)">Tümünü seç</span>
+    <span style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="temizleTumunuSec(false)">Temizle</span>
+  </div>
+
+  <!-- Onay kutusu -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:rgba(226,75,74,.06);border-radius:var(--r);border:.5px solid rgba(226,75,74,.2)">
+    <input type="checkbox" id="temizleOnay" style="width:16px;height:16px;accent-color:var(--red);flex-shrink:0">
+    <label for="temizleOnay" style="font-size:13px;cursor:pointer">
+      Seçili tabloların <strong>tüm verilerinin kalıcı olarak silineceğini</strong> anlıyor ve onaylıyorum.
+    </label>
+  </div>
+
+  <div class="progress-wrap" id="temizleProgress" style="display:none">
+    <div class="progress"><div class="progress-fill" id="temizleBar" style="width:0%;background:var(--red)"></div></div>
+    <div class="log" id="temizleLog"></div>
+  </div>
+
+  <button class="btn dan" id="temizleBtn" onclick="temizleBaslat()" style="border-color:var(--red)">
+    🗑 Seçili Tabloları Temizle
+  </button>
+</div>
+
+<script>
+const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
+const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function apiHeaders(){
+  const token = authToken() || SB_KEY;
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+function ownerFilter(table,p=''){
+  if(!OWNER_TABLES.has(table)) return p;
+  const own = `owner_id=eq.${encodeURIComponent(authUserId())}`;
+  return p ? `${p}&${own}` : own;
+}
+if(!authToken()){ location.href = 'index.html'; }
+
+const TABLOLAR = [
+  {key:'transactions', ad:'İşlemler',     ikon:'💳'},
+  {key:'installments', ad:'Taksitler',    ikon:'📅'},
+  {key:'loans',        ad:'Krediler',     ikon:'🏦'},
+  {key:'budgets',      ad:'Bütçe',        ikon:'🎯'},
+  {key:'categories',   ad:'Kategoriler',  ikon:'🏷️'},
+  {key:'members',      ad:'Üyeler',       ikon:'👥'},
+];
+
+let _sayimlar = {};
+let _importData = null;
+
+// ── YARDIMCI ──────────────────────────────────────────────
+async function sbGetAll(tablo) {
+  // Supabase max 1000 satır döner, sayfalama ile hepsini çek
+  let tumu = [], offset = 0, limit = 1000;
+  while (true) {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,`order=id.asc&limit=${limit}&offset=${offset}`)}`,
+      {headers: apiHeaders()}
+    );
+    if (!r.ok) throw new Error(`${tablo}: ${await r.text()}`);
+    const data = await r.json();
+    tumu = tumu.concat(data);
+    if (data.length < limit) break;
+    offset += limit;
+  }
+  return tumu;
+}
+
+async function sbUpsert(tablo, rows) {
+  if (!rows.length) return;
+  const payload = OWNER_TABLES.has(tablo) ? rows.map(r => ({...r, owner_id: authUserId()})) : rows;
+  const r = await fetch(`${SB_URL}/rest/v1/${tablo}`, {
+    method: 'POST',
+    headers: {...apiHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation'},
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error(`${tablo}: ${await r.text()}`);
+}
+
+async function sbSayim(tablo) {
+  const r = await fetch(
+    `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'select=id&limit=1')}`,
+    {headers: {...apiHeaders(), 'Prefer': 'count=exact'}}
+  );
+  const cr = r.headers.get('content-range') || '0/0';
+  return parseInt(cr.split('/')[1]) || 0;
+}
+
+function log(elId, msg) {
+  const el = document.getElementById(elId);
+  if (el) el.textContent = msg;
+}
+function bar(elId, pct) {
+  const el = document.getElementById(elId);
+  if (el) el.style.width = pct + '%';
+}
+function alert_(html, tip='info') {
+  document.getElementById('alertBox').innerHTML =
+    `<div class="alert ${tip}">${html}</div>`;
+}
+
+// ── SAYIM & UI ────────────────────────────────────────────
+async function sayimlariYukle() {
+  const grid = document.getElementById('exportTables');
+  grid.innerHTML = TABLOLAR.map(t =>
+    `<div class="tbl-item selected" id="ti-${t.key}" onclick="toggleTablo('${t.key}')">
+      <input type="checkbox" id="chk-${t.key}" checked onclick="event.stopPropagation();toggleTablo('${t.key}')">
+      <div class="tbl-info">
+        <div class="tbl-name">${t.ikon} ${t.ad}</div>
+        <div class="tbl-cnt" id="cnt-${t.key}">Sayılıyor...</div>
+      </div>
+    </div>`
+  ).join('');
+
+  for (const t of TABLOLAR) {
+    try {
+      const n = await sbSayim(t.key);
+      _sayimlar[t.key] = n;
+      document.getElementById('cnt-'+t.key).textContent = n + ' kayıt';
+    } catch(e) {
+      document.getElementById('cnt-'+t.key).textContent = 'Erişilemiyor';
+      _sayimlar[t.key] = 0;
+    }
+  }
+  gecmisiGoster();
+}
+
+function toggleTablo(key) {
+  const chk = document.getElementById('chk-'+key);
+  const item = document.getElementById('ti-'+key);
+  chk.checked = !chk.checked;
+  item.classList.toggle('selected', chk.checked);
+}
+
+function tumunuSec(sec) {
+  TABLOLAR.forEach(t => {
+    document.getElementById('chk-'+t.key).checked = sec;
+    document.getElementById('ti-'+t.key).classList.toggle('selected', sec);
+  });
+}
+
+// ── EXPORT ────────────────────────────────────────────────
+async function exportBaslat() {
+  const secili = TABLOLAR.filter(t => document.getElementById('chk-'+t.key)?.checked);
+  if (!secili.length) { alert_('En az bir tablo seç', 'err'); return; }
+
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  document.getElementById('exportProgress').style.display = 'block';
+  alert_('');
+
+  const yedek = {
+    meta: {
+      versiyon: '1.0',
+      tarih: new Date().toISOString(),
+      uygulama: 'Aile Cüzdanı',
+      tablolar: secili.map(t => t.key)
+    },
+    data: {}
+  };
+
+  let tamam = 0;
+  for (const t of secili) {
+    log('exportLog', `${t.ikon} ${t.ad} okunuyor...`);
+    bar('exportBar', Math.round((tamam / secili.length) * 100));
+    try {
+      yedek.data[t.key] = await sbGetAll(t.key);
+      tamam++;
+      log('exportLog', `✓ ${t.ad}: ${yedek.data[t.key].length} kayıt`);
+    } catch(e) {
+      log('exportLog', `✗ ${t.ad}: ${e.message}`);
+    }
+  }
+
+  bar('exportBar', 100);
+
+  // JSON dosyası indir
+  const tarihStr = new Date().toISOString().slice(0,19).replace(/[:.]/g,'-');
+  const dosyaAdi = `aile-cuzdani-yedek-${tarihStr}.json`;
+  const blob = new Blob([JSON.stringify(yedek, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = dosyaAdi; a.click();
+  URL.revokeObjectURL(url);
+
+  // Yerel geçmişe kaydet
+  const gecmis = JSON.parse(localStorage.getItem('ac_yedek_gecmis')||'[]');
+  gecmis.unshift({
+    tarih: new Date().toISOString(),
+    dosya: dosyaAdi,
+    tablolar: secili.map(t=>t.key),
+    toplam: Object.values(yedek.data).reduce((s,v)=>s+v.length,0)
+  });
+  localStorage.setItem('ac_yedek_gecmis', JSON.stringify(gecmis.slice(0,10)));
+
+  log('exportLog', `✅ Yedek hazır: ${dosyaAdi}`);
+  alert_(`✓ <strong>${dosyaAdi}</strong> indirildi · ${Object.values(yedek.data).reduce((s,v)=>s+v.length,0)} toplam kayıt`, 'suc');
+  btn.disabled = false;
+  gecmisiGoster();
+}
+
+// ── IMPORT ────────────────────────────────────────────────
+function importDosyaOku(dosya) {
+  if (!dosya) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.meta || !data.data) throw new Error('Geçersiz yedek formatı');
+      _importData = data;
+      importOnizleGoster(data);
+    } catch(err) {
+      alert_('Dosya okunamadı: ' + err.message, 'err');
+    }
+  };
+  reader.readAsText(dosya);
+}
+
+function importOnizleGoster(data) {
+  const toplam = Object.values(data.data).reduce((s,v)=>s+v.length,0);
+  const tarih = new Date(data.meta.tarih).toLocaleString('tr-TR');
+
+  document.getElementById('importStat').innerHTML = `
+    <div class="stat"><div class="sl">Yedek tarihi</div><div class="sv" style="font-size:13px">${tarih}</div></div>
+    <div class="stat"><div class="sl">Toplam kayıt</div><div class="sv">${toplam}</div></div>
+    <div class="stat"><div class="sl">Tablo sayısı</div><div class="sv">${Object.keys(data.data).length}</div></div>`;
+
+  const tablo_html = Object.entries(data.data).map(([key, rows]) => {
+    const t = TABLOLAR.find(x => x.key === key) || {ikon:'📋', ad:key};
+    const mevcutSayi = _sayimlar[key] || 0;
+    return `<div class="conflict-item">
+      <div>${t.ikon} <strong>${t.ad}</strong></div>
+      <div style="display:flex;gap:16px;font-size:12px;color:var(--muted)">
+        <span>Yedekte: <strong style="color:var(--text)">${rows.length}</strong></span>
+        <span>Mevcut: <strong style="color:var(--text)">${mevcutSayi}</strong></span>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('importTablolar').innerHTML = `
+    <div style="margin-bottom:8px;font-size:12px;color:var(--muted)">
+      Çakışan kayıtlar <strong>güncellenir</strong>, yeni kayıtlar <strong>eklenir</strong>. Mevcut veri silinmez.
+    </div>
+    <div style="border:.5px solid var(--border);border-radius:var(--r);padding:4px 12px;margin-bottom:8px">${tablo_html}</div>`;
+
+  document.getElementById('importOnizle').style.display = 'block';
+  document.getElementById('dropZone').style.display = 'none';
+}
+
+async function importBaslat() {
+  if (!_importData) return;
+  if (!confirm('Geri yükleme başlasın mı? Mevcut veriler güncellenecek.')) return;
+
+  const btn = document.getElementById('importBtn');
+  btn.disabled = true;
+  document.getElementById('importProgress').style.display = 'block';
+
+  const tablolar = Object.keys(_importData.data);
+  let tamam = 0, hataSayisi = 0;
+
+  // Sıra önemli: önce bağımsız tablolar, sonra bağımlılar
+  const sira = ['members','categories','budgets','loans','installments','transactions'];
+  const sirali = [...sira.filter(k=>tablolar.includes(k)), ...tablolar.filter(k=>!sira.includes(k))];
+
+  for (const key of sirali) {
+    const rows = _importData.data[key];
+    if (!rows?.length) continue;
+    const t = TABLOLAR.find(x=>x.key===key)||{ikon:'📋',ad:key};
+    log('importLog', `${t.ikon} ${t.ad} yükleniyor (${rows.length} kayıt)...`);
+    bar('importBar', Math.round((tamam/sirali.length)*100));
+    try {
+      // 500'lük batch'ler halinde upsert
+      const batchSize = 500;
+      for (let i=0; i<rows.length; i+=batchSize) {
+        await sbUpsert(key, rows.slice(i, i+batchSize));
+      }
+      tamam++;
+      log('importLog', `✓ ${t.ad}: ${rows.length} kayıt yüklendi`);
+    } catch(e) {
+      hataSayisi++;
+      log('importLog', `✗ ${t.ad}: ${e.message}`);
+    }
+  }
+
+  bar('importBar', 100);
+  btn.disabled = false;
+
+  if (hataSayisi === 0) {
+    alert_(`✓ Geri yükleme tamamlandı · ${tamam} tablo başarılı · <a href="index.html" style="color:var(--green);font-weight:500">Uygulamaya dön →</a>`, 'suc');
+  } else {
+    alert_(`Geri yükleme tamamlandı · ${tamam} başarılı · ${hataSayisi} hatalı`, 'warn');
+  }
+  sayimlariYukle();
+}
+
+function importSifirla() {
+  _importData = null;
+  document.getElementById('importOnizle').style.display = 'none';
+  document.getElementById('dropZone').style.display = 'block';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('importProgress').style.display = 'none';
+}
+
+// ── GEÇMİŞ ───────────────────────────────────────────────
+function gecmisiGoster() {
+  const gecmis = JSON.parse(localStorage.getItem('ac_yedek_gecmis')||'[]');
+  const el = document.getElementById('gecmisL');
+  if (!gecmis.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted)">Henüz yedek alınmadı</div>';
+    return;
+  }
+  el.innerHTML = gecmis.map(g => {
+    const tarih = new Date(g.tarih).toLocaleString('tr-TR');
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)">
+      <div>
+        <div style="font-size:13px">${g.dosya}</div>
+        <div style="font-size:11px;color:var(--muted)">${tarih} · ${g.toplam} kayıt · ${g.tablolar.length} tablo</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TEMİZLE ──────────────────────────────────────────────
+function temizleTablolariDoldur() {
+  // Categories ve Members'ı varsayılan olarak SEÇİLİ DEĞIL bırak — kritik tablolar
+  const kritik = ['categories','members'];
+  document.getElementById('temizleTables').innerHTML = TABLOLAR.map(t =>
+    `<div class="tbl-item" id="tti-${t.key}" onclick="temizleToggle('${t.key}')" style="border-color:rgba(226,75,74,.2)">
+      <input type="checkbox" id="tchk-${t.key}" onclick="event.stopPropagation();temizleToggle('${t.key}')"
+             style="accent-color:var(--red)">
+      <div class="tbl-info">
+        <div class="tbl-name">${t.ikon} ${t.ad}${kritik.includes(t.key)?` <span style="font-size:10px;color:var(--amber)">dikkat</span>`:''}</div>
+        <div class="tbl-cnt" id="tcnt-${t.key}">${_sayimlar[t.key]!=null?_sayimlar[t.key]+' kayıt':'...'}</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function temizleToggle(key) {
+  const chk  = document.getElementById('tchk-' +key);
+  const item = document.getElementById('tti-'  +key);
+  chk.checked = !chk.checked;
+  item.classList.toggle('selected', chk.checked);
+  if (chk.checked) item.style.borderColor = 'var(--red)';
+  else item.style.borderColor = 'rgba(226,75,74,.2)';
+}
+
+function temizleTumunuSec(sec) {
+  TABLOLAR.forEach(t => {
+    const chk  = document.getElementById('tchk-'+t.key);
+    const item = document.getElementById('tti-' +t.key);
+    chk.checked = sec;
+    item.classList.toggle('selected', sec);
+    item.style.borderColor = sec ? 'var(--red)' : 'rgba(226,75,74,.2)';
+  });
+}
+
+async function sbTemizle(tablo) {
+  // Supabase REST: tüm satırları sil — id != '' filtresi gerekli (boş DELETE = 400)
+  const r = await fetch(`${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'id=neq.00000000-0000-0000-0000-000000000000')}`, {
+    method: 'DELETE',
+    headers: apiHeaders()
+  });
+  // text id'ler için farklı bir pattern
+  if (!r.ok) {
+    // text PK için tekrar dene
+    const r2 = await fetch(`${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'id=like.*')}`, {
+      method: 'DELETE', headers: apiHeaders()
+    });
+    if (!r2.ok) throw new Error(await r2.text());
+  }
+}
+
+async function temizleBaslat() {
+  const secili = TABLOLAR.filter(t => document.getElementById('tchk-'+t.key)?.checked);
+  if (!secili.length) { alert_('En az bir tablo seç', 'err'); return; }
+  if (!document.getElementById('temizleOnay').checked) {
+    alert_('Onay kutusunu işaretlemen gerekiyor', 'err'); return;
+  }
+
+  // Son uyarı — tablo adlarını listele
+  const tblAdlari = secili.map(t => t.ad).join(', ');
+  const onay = confirm(
+    `DİKKAT: Aşağıdaki tablolar tamamen silinecek:\n\n${tblAdlari}\n\nBu işlem GERİ ALINAMAZ.\nDevam etmek istediğine emin misin?`
+  );
+  if (!onay) return;
+
+  const btn = document.getElementById('temizleBtn');
+  btn.disabled = true;
+  document.getElementById('temizleProgress').style.display = 'block';
+  alert_('');
+
+  // Silme sırası: bağımlı tablolar önce silinmeli
+  const silmeSirasi = ['installments','transactions','budgets','loans','categories','members'];
+  const sirali = [...silmeSirasi.filter(k => secili.find(t=>t.key===k)),
+                  ...secili.filter(t => !silmeSirasi.includes(t.key)).map(t=>t.key)];
+
+  let tamam = 0, hataSayisi = 0;
+  for (const key of sirali) {
+    const t = TABLOLAR.find(x => x.key === key);
+    log('temizleLog', `${t.ikon} ${t.ad} siliniyor...`);
+    bar('temizleBar', Math.round((tamam / sirali.length) * 100));
+    try {
+      await sbTemizle(key);
+      tamam++;
+      log('temizleLog', `✓ ${t.ad} temizlendi`);
+      // Sayımı sıfırla
+      _sayimlar[key] = 0;
+      const cntEl = document.getElementById('cnt-'+key);
+      if (cntEl) cntEl.textContent = '0 kayıt';
+      const tcntEl = document.getElementById('tcnt-'+key);
+      if (tcntEl) tcntEl.textContent = '0 kayıt';
+    } catch(e) {
+      hataSayisi++;
+      log('temizleLog', `✗ ${t.ad}: ${e.message}`);
+    }
+  }
+
+  bar('temizleBar', 100);
+  btn.disabled = false;
+  document.getElementById('temizleOnay').checked = false;
+
+  if (hataSayisi === 0) {
+    alert_(`✓ ${tamam} tablo başarıyla temizlendi`, 'suc');
+  } else {
+    alert_(`${tamam} tablo temizlendi · ${hataSayisi} hatalı`, 'warn');
+  }
+  // Sayımları güncelle
+  sayimlariYukle();
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave', ()=>dz.classList.remove('over'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('over');
+  if(e.dataTransfer.files[0]) importDosyaOku(e.dataTransfer.files[0]);
+});
+
+// ── BAŞLANGIÇ ─────────────────────────────────────────────
+(async () => { await sayimlariYukle(); temizleTablolariDoldur(); })();
+</script>
+</body>
+</html>
