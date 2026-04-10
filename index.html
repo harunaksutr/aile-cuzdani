@@ -133,6 +133,12 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
       <input id="authEmail" type="email" placeholder="ornek@mail.com">
       <label>Sifre</label>
       <input id="authPassword" type="password" placeholder="En az 6 karakter">
+      <label id="authKvkkWrap" style="display:none;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4">
+        <input id="authKvkk" type="checkbox" style="margin-right:6px;vertical-align:middle">
+        <a href="privacy.html" target="_blank" rel="noopener">Gizlilik politikasını</a> ve
+        <a href="terms.html" target="_blank" rel="noopener">kullanıcı sözleşmesini</a>
+        okudum, kabul ediyorum.
+      </label>
       <button type="button" class="auth-submit" id="authSubmitBtn" onclick="authDevam()">Giriş yap</button>
       <button type="button" class="auth-link" id="authRecoverBtn" onclick="authSifreSifirla()">Şifremi unuttum</button>
       <p id="authMessage" class="auth-message"></p>
@@ -647,6 +653,8 @@ function authTabDegistir(mode, mesajTemizle){
   document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Giriş yap' : 'Hesap oluştur';
   const rec = document.getElementById('authRecoverBtn');
   if(rec) rec.hidden = mode !== 'login';
+  const kvkkWrap = document.getElementById('authKvkkWrap');
+  if(kvkkWrap) kvkkWrap.style.display = mode === 'signup' ? 'block' : 'none';
   const sub = document.getElementById('authSubtitle');
   if(sub){
     sub.textContent = mode==='signup'
@@ -654,6 +662,14 @@ function authTabDegistir(mode, mesajTemizle){
       : 'Hesabınla giriş yap veya yeni hesap oluştur.';
   }
   if(mesajTemizle !== false) authMesaj('');
+}
+function authTabUrlUygula(){
+  try{
+    const p = new URLSearchParams(window.location.search || '');
+    const auth = (p.get('auth') || '').toLowerCase();
+    if(auth === 'signup') authTabDegistir('signup', false);
+    else if(auth === 'login') authTabDegistir('login', false);
+  }catch(_){}
 }
 async function authSifreSifirla(){
   const email = (document.getElementById('authEmail')?.value || '').trim();
@@ -769,6 +785,11 @@ async function authDevam(){
   if(!email || !password){ authMesaj('E-posta ve şifre zorunlu.', true); return; }
   try{
     if(_authMode === 'signup'){
+      const kvkkOk = !!document.getElementById('authKvkk')?.checked;
+      if(!kvkkOk){
+        authMesaj('Kayıt için gizlilik politikası ve kullanıcı sözleşmesi onayı zorunlu.', true);
+        return;
+      }
       authMesaj('Hesap oluşturuluyor…');
       const redir = encodeURIComponent(authConfirmRedirectUrl());
       const signData = await authIstek(`signup?redirect_to=${redir}`, { email, password });
@@ -781,6 +802,8 @@ async function authDevam(){
       }
       authTabDegistir('login', false);
       document.getElementById('authPassword').value = '';
+      const kvkk = document.getElementById('authKvkk');
+      if(kvkk) kvkk.checked = false;
       authMesaj(
         'Hesap oluşturuldu. Lütfen e-posta adresine gidip gelen kutunu (ve gerekirse spam klasörünü) kontrol et; onay bağlantısına tıkla. Onayladıktan sonra aşağıdan «Giriş yap» ile aynı e-posta ve şifreyle oturum aç.',
         false
@@ -1960,6 +1983,7 @@ async function authBaslat(){
       }catch(_){ authMesaj(String(msg), true); }
       authHashTemizle();
       document.getElementById('authGate').style.display='flex';
+      authTabUrlUygula();
       authGovdeScrollKilidi();
       return;
     }
@@ -1983,6 +2007,7 @@ async function authBaslat(){
   const token = authToken();
   if(!token){
     document.getElementById('authGate').style.display='flex';
+    authTabUrlUygula();
     authGovdeScrollKilidi();
     return;
   }
@@ -2002,6 +2027,7 @@ async function authBaslat(){
     localStorage.removeItem('ac_user_id');
     authMesaj(sbJwtHatasiMetin(msg) ? 'Oturum süresi doldu. Lütfen tekrar giriş yap.' : e.message, true);
     document.getElementById('authGate').style.display='flex';
+    authTabUrlUygula();
   }
   authGovdeScrollKilidi();
 }
