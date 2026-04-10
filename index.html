@@ -587,7 +587,7 @@ function authMesaj(msg, err=false){
   const el = document.getElementById('authMessage');
   if(!el) return;
   el.textContent = msg || '';
-  el.style.color = err ? '#E24B4A' : '';
+  el.style.color = err ? '#E24B4A' : (msg ? 'var(--text)' : '');
 }
 function authGovdeScrollKilidi(){
   const ag = document.getElementById('authGate');
@@ -603,17 +603,56 @@ function setupMesaj(msg, err=false){
   el.textContent = msg || '';
   el.style.color = err ? '#E24B4A' : '';
 }
-function authTabDegistir(mode){
+function authTabDegistir(mode, mesajTemizle){
   _authMode = mode;
   document.getElementById('tabLogin').classList.toggle('active', mode==='login');
   document.getElementById('tabSignup').classList.toggle('active', mode==='signup');
   document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Giriş yap' : 'Hesap oluştur';
-  authMesaj('');
+  const sub = document.getElementById('authSubtitle');
+  if(sub){
+    sub.textContent = mode==='signup'
+      ? 'Kayıt olduktan sonra e-postana onay linki gelir; linke tıkladıktan sonra giriş yapabilirsin.'
+      : 'Hesabınla giriş yap veya yeni hesap oluştur.';
+  }
+  if(mesajTemizle !== false) authMesaj('');
 }
 function authOturumKaydet(data){
   localStorage.setItem('ac_access_token', data.access_token || '');
   localStorage.setItem('ac_refresh_token', data.refresh_token || '');
   localStorage.setItem('ac_user_id', data.user?.id || '');
+}
+/** E-posta onayı / magic link sonrası: #access_token=...&refresh_token=... */
+function authJwtPayload(token){
+  if(!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if(parts.length < 2) return null;
+  try{
+    let b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
+    const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+    return JSON.parse(atob(b64 + pad));
+  }catch(_){ return null; }
+}
+function authHashTemizle(){
+  const u = window.location.pathname + window.location.search;
+  if(window.location.hash) history.replaceState(null, '', u);
+}
+/** Hash'te token varsa localStorage'a yazar ve true döner */
+function authHashCallbackIsle(){
+  const raw = (window.location.hash || '').replace(/^#/, '');
+  if(!raw) return false;
+  const p = new URLSearchParams(raw);
+  const access = p.get('access_token');
+  const refresh = p.get('refresh_token') || '';
+  if(!access) return false;
+  const pl = authJwtPayload(access);
+  const uid = pl && pl.sub ? pl.sub : '';
+  authOturumKaydet({
+    access_token: access,
+    refresh_token: refresh,
+    user: { id: uid }
+  });
+  authHashTemizle();
+  return true;
 }
 function authSignupOturumVar(signData){
   if(!signData || typeof signData !== 'object') return null;
@@ -642,9 +681,12 @@ async function authDevam(){
         await uygulamaBaslat();
         return;
       }
-      authMesaj('Kayıt tamam. E-postana gelen onay bağlantısına tıkla; onayladıktan sonra «Giriş» sekmesinden şifrenle giriş yap.', false);
-      authTabDegistir('login');
+      authTabDegistir('login', false);
       document.getElementById('authPassword').value = '';
+      authMesaj(
+        'Hesap oluşturuldu. Lütfen e-posta adresine gidip gelen kutunu (ve gerekirse spam klasörünü) kontrol et; onay bağlantısına tıkla. Onayladıktan sonra aşağıdan «Giriş yap» ile aynı e-posta ve şifreyle oturum aç.',
+        false
+      );
       authGovdeScrollKilidi();
       return;
     }
@@ -1572,6 +1614,33 @@ async function uygulamaBaslat(skipSetupCheck=false){
   authGovdeScrollKilidi();
 }
 async function authBaslat(){
+  const rawHash = (window.location.hash || '').replace(/^#/, '');
+  if(rawHash){
+    const pe = new URLSearchParams(rawHash);
+    if(pe.get('error')){
+      const msg = pe.get('error_description') || pe.get('error') || 'Bağlantı geçersiz';
+      try{
+        authMesaj(decodeURIComponent(String(msg).replace(/\+/g,' ')), true);
+      }catch(_){ authMesaj(String(msg), true); }
+      authHashTemizle();
+      document.getElementById('authGate').style.display='flex';
+      authGovdeScrollKilidi();
+      return;
+    }
+  }
+  if(authHashCallbackIsle()){
+    try{
+      await uygulamaBaslat();
+    }catch(e){
+      localStorage.removeItem('ac_access_token');
+      localStorage.removeItem('ac_refresh_token');
+      localStorage.removeItem('ac_user_id');
+      authMesaj(e.message, true);
+      document.getElementById('authGate').style.display='flex';
+    }
+    authGovdeScrollKilidi();
+    return;
+  }
   const token = authToken();
   if(!token){
     document.getElementById('authGate').style.display='flex';
