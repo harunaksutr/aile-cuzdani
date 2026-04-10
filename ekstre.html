@@ -107,7 +107,19 @@ td.mu{color:var(--muted)}
 <script>
 const SB_URL = 'https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function apiHeaders(){
+  const token = authToken() || SB_KEY;
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+function ownerFilter(table,p=''){
+  if(!OWNER_TABLES.has(table)) return p;
+  const own = `owner_id=eq.${encodeURIComponent(authUserId())}`;
+  return p ? `${p}&${own}` : own;
+}
+if(!authToken()){ location.href = 'index.html'; }
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -169,13 +181,13 @@ async function pdfYukle(file) {
 
   // Kategorileri yükle
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, {headers: HEADERS});
+    const r = await fetch(`${SB_URL}/rest/v1/categories?${ownerFilter('categories','order=sira.asc')}`, {headers: apiHeaders()});
     kategoriler = (await r.json()).map(k => k.ad);
   } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
 
   // Üyeleri yükle
   try {
-    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, {headers: HEADERS});
+    const ru = await fetch(`${SB_URL}/rest/v1/members?${ownerFilter('members','aktif=eq.true&order=sira.asc')}`, {headers: apiHeaders()});
     uyeler = await ru.json();
   } catch(e) { uyeler = [{slug:'harun',ad:'Harun'},{slug:'aslı',ad:'Aslı'},{slug:'zeynep',ad:'Zeynep'},{slug:'zehra',ad:'Zehra'}]; }
 
@@ -393,18 +405,18 @@ async function kaydet() {
     try {
       // Duplicate kontrol — aynı tarih + açıklama + tutar var mı?
       const kontrol = await fetch(
-        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${r.kaynak||seciliBanka}&select=id`,
-        { headers: HEADERS }
+        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${r.kaynak||seciliBanka}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
+        { headers: apiHeaders() }
       );
       const mevcut = await kontrol.json();
       if (mevcut.length > 0) { atlandi++; continue; }
 
       // Transactions'a ekle
       await fetch(`${SB_URL}/rest/v1/transactions`, {
-        method: 'POST', headers: HEADERS,
+        method: 'POST', headers: apiHeaders(),
         body: JSON.stringify({
           tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
-          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye, notlar: ''
+          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye, notlar: '', owner_id: authUserId()
         })
       });
 
@@ -412,8 +424,8 @@ async function kaydet() {
       if (r.toplam_taksit > 1) {
         // Aynı kredi + taksit_no var mı kontrol et (ekstre eşleşme)
         const tKontrol = await fetch(
-          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&taksit_no=eq.${r.taksit_no}&select=id`,
-          { headers: HEADERS }
+          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&taksit_no=eq.${r.taksit_no}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
+          { headers: apiHeaders() }
         );
         const tMevcut = await tKontrol.json();
         
@@ -421,12 +433,12 @@ async function kaydet() {
           // Mevcut taksiti güncelle: bu ay ödendi olarak işaretle
           // (ekstre'deki işlem o ay ödenmiş demek = bu taksit geçti)
           const tId = tMevcut[0].id;
-          const detay = await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}&select=kalan_taksit`, { headers: HEADERS });
+          const detay = await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}&owner_id=eq.${encodeURIComponent(authUserId())}&select=kalan_taksit`, { headers: apiHeaders() });
           const detayData = await detay.json();
           if (detayData.length > 0) {
             const yk = Math.max(0, detayData[0].kalan_taksit - 1);
             await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}`, {
-              method: 'PATCH', headers: HEADERS,
+              method: 'PATCH', headers: apiHeaders(),
               body: JSON.stringify({ kalan_taksit: yk, durum: yk <= 0 ? 'odendi' : 'bekliyor' })
             });
           }
@@ -435,12 +447,12 @@ async function kaydet() {
           const sonOdeme = new Date(r.tarih);
           sonOdeme.setMonth(sonOdeme.getMonth() + r.kalan_taksit - 1);
           await fetch(`${SB_URL}/rest/v1/installments`, {
-            method: 'POST', headers: HEADERS,
+            method: 'POST', headers: apiHeaders(),
             body: JSON.stringify({
               aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
               toplam_taksit: r.toplam_taksit, kalan_taksit: r.kalan_taksit,
               taksit_no: r.taksit_no,
-              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor'
+              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor', owner_id: authUserId()
             })
           });
         }
