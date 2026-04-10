@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aile Cüzdanı - Akıllı bütçe ve taksit takibi</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--text:#eef1f7;--muted:#9ca3b3;--blue:#378ADD;--green:#1D9E75;--border:rgba(255,255,255,.12);--r:12px;--rl:18px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:radial-gradient(1200px 600px at 20% -10%,#1c2438 0%,#0f1115 60%);color:var(--text);line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:26px 16px 42px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}
+.brand{font-size:18px;font-weight:600}
+.actions{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:var(--r);border:.5px solid var(--border);text-decoration:none;color:var(--text);font-size:13px}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-bottom:18px}
+.card{background:var(--card);border:.5px solid var(--border);border-radius:var(--rl);padding:20px}
+h1{font-size:34px;line-height:1.15;margin-bottom:10px}
+.sub{font-size:15px;color:var(--muted);margin-bottom:18px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.k{background:rgba(255,255,255,.03);border:.5px solid var(--border);border-radius:10px;padding:12px}
+.k b{display:block;font-size:18px;margin-bottom:4px}
+.k span{font-size:12px;color:var(--muted)}
+.shot{height:100%;min-height:220px;background:linear-gradient(135deg,#1f2638,#1a1f2d);border:.5px dashed rgba(255,255,255,.22);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.f h3{font-size:14px;margin-bottom:4px}
+.f p{font-size:12px;color:var(--muted)}
+.foot{margin-top:18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.foot a{color:#b8c8ff;text-decoration:none}
+@media(max-width:850px){.hero{grid-template-columns:1fr}.kpis,.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){h1{font-size:28px}.kpis,.grid{grid-template-columns:1fr}.top{flex-direction:column;align-items:flex-start;gap:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">Aile Cüzdanı</div>
+    <div class="actions">
+      <a class="btn" href="index.html?auth=login">Giriş</a>
+      <a class="btn pri" href="index.html?auth=signup">Kayıt ol</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="card">
+      <h1>Hane bütçeni tek yerden yönet.</h1>
+      <p class="sub">Harcamaları takip et, taksitleri kaçırma, aile üyelerine göre dağılımı gör. Ekstre yükleyip işlemleri saniyeler içinde kaydet.</p>
+      <div class="actions" style="margin-bottom:14px">
+        <a class="btn pri" href="index.html?auth=signup">Ücretsiz başla</a>
+        <a class="btn" href="index.html?auth=login">Hesabım var</a>
+      </div>
+      <div class="kpis">
+        <div class="k"><b>Dashboard</b><span>Aylık trend, üye bazlı harcama ve kategori dağılımı</span></div>
+        <div class="k"><b>Taksit Takibi</b><span>Gecikme ve yaklaşan ödeme bildirimleri</span></div>
+        <div class="k"><b>Ekstre İçe Aktar</b><span>Garanti / Enpara satırlarını hızlı kaydetme</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="shot">Buraya uygulama ekran görüntüleri ekleyebilirsin<br>(Dashboard, Taksitler, Ekstre Yükle)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="f"><h3>Çok kullanıcılı yapı</h3><p>Her kullanıcının verisi owner bazlı RLS ile izole edilir.</p></div>
+      <div class="f"><h3>Hızlı düzenleme</h3><p>İşlem satırlarını tablo üzerinde doğrudan düzenleyebilirsin.</p></div>
+      <div class="f"><h3>Yedekleme</h3><p>Yedek al, geri yükle ve geçmiş kayıtlarını güvenceye al.</p></div>
+    </div>
+    <div class="foot">
+      <div>© Aile Cüzdanı</div>
+      <div><a href="privacy.html">Gizlilik Politikası</a> · <a href="terms.html">Kullanıcı Sözleşmesi</a></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
