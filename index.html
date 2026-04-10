@@ -1005,7 +1005,7 @@ function uyeGoster(txn){
 }
 
 let _sonIslemCache=[];
-let _islemEditId = null;
+let _islemEditIds = new Set();
 function h(v){
   return String(v ?? '')
     .replace(/&/g,'&amp;')
@@ -1072,18 +1072,18 @@ async function islemleriYukle(){
       <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;color:var(--muted)">${data.length} işlem</span><span style="font-weight:500">${formatPara(toplam)}</span></div>
       <table><thead><tr><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
       <tbody>${data.map(r=>{
-        const edit = _islemEditId === r.id;
+        const edit = _islemEditIds.has(r.id);
         if(edit){
           return `<tr class="tr-h">
-            <td><input id="duz_tarih_${r.id}" type="date" value="${h(r.tarih)}" style="width:130px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
-            <td><input id="duz_aciklama_${r.id}" type="text" value="${h(r.aciklama)}" style="width:100%;min-width:160px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
-            <td class="hide-mob"><select id="duz_kategori_${r.id}" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_kategoriler.map(k=>`<option value="${h(k.ad)}" ${k.ad===r.kategori?'selected':''}>${h(k.ad)}</option>`).join('')}</select></td>
-            <td class="hide-mob"><select id="duz_uye_${r.id}" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_uyeler.map(u=>`<option value="${h(u.slug)}" ${u.slug===r.uye?'selected':''}>${h(u.ad)}</option>`).join('')}</select></td>
-            <td><select id="duz_kaynak_${r.id}" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${kaynaklar.map(k=>`<option value="${h(k)}" ${k===r.kaynak?'selected':''}>${h(kaynakAdi(k))}</option>`).join('')}</select></td>
-            <td class="amt"><input id="duz_tutar_${r.id}" type="number" step="0.01" value="${h(r.tutar)}" style="width:120px;text-align:right;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
+            <td><input id="duz_tarih_${r.id}" type="date" value="${h(r.tarih)}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="width:130px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
+            <td><input id="duz_aciklama_${r.id}" type="text" value="${h(r.aciklama)}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="width:100%;min-width:160px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
+            <td class="hide-mob"><select id="duz_kategori_${r.id}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_kategoriler.map(k=>`<option value="${h(k.ad)}" ${k.ad===r.kategori?'selected':''}>${h(k.ad)}</option>`).join('')}</select></td>
+            <td class="hide-mob"><select id="duz_uye_${r.id}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_uyeler.map(u=>`<option value="${h(u.slug)}" ${u.slug===r.uye?'selected':''}>${h(u.ad)}</option>`).join('')}</select></td>
+            <td><select id="duz_kaynak_${r.id}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${kaynaklar.map(k=>`<option value="${h(k)}" ${k===r.kaynak?'selected':''}>${h(kaynakAdi(k))}</option>`).join('')}</select></td>
+            <td class="amt"><input id="duz_tutar_${r.id}" type="number" step="0.01" value="${h(r.tutar)}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="width:120px;text-align:right;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
             <td style="white-space:nowrap">
               <button class="btn pri" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="islemDuzenleKaydet('${r.id}')">Kaydet</button>
-              <button class="btn" style="padding:3px 8px;font-size:11px" onclick="islemDuzenleIptal()">İptal</button>
+              <button class="btn" style="padding:3px 8px;font-size:11px" onclick="islemDuzenleIptal('${r.id}')">İptal</button>
             </td>
           </tr>`;
         }
@@ -1093,12 +1093,23 @@ async function islemleriYukle(){
 }
 function islemFiltreTemizle(){['filAra','filMin','filMax'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['filU','filK','filKy'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});islemleriYukle();}
 function islemDuzenleBaslat(id){
-  _islemEditId = id;
+  _islemEditIds.add(id);
   islemleriYukle();
 }
-function islemDuzenleIptal(){
-  _islemEditId = null;
+function islemDuzenleIptal(id){
+  if(id){ _islemEditIds.delete(id); }
+  else{ _islemEditIds.clear(); }
   islemleriYukle();
+}
+function islemDuzenleTus(ev,id){
+  if(!ev || !id) return;
+  if(ev.key === 'Escape'){
+    ev.preventDefault();
+    islemDuzenleIptal(id);
+  }else if(ev.key === 'Enter'){
+    ev.preventDefault();
+    islemDuzenleKaydet(id);
+  }
 }
 async function islemDuzenleKaydet(id){
   try{
@@ -1120,7 +1131,7 @@ async function islemDuzenleKaydet(id){
       uye,
       kaynak
     });
-    _islemEditId = null;
+    _islemEditIds.delete(id);
     toast('İşlem güncellendi');
     await islemleriYukle();
     dashboardYukle();
