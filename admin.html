@@ -94,22 +94,13 @@ function escapeHtml(s) {
 async function baslat() {
   const area = document.getElementById('mainArea');
   if (!authToken()) {
-    area.innerHTML = `
-      <div class="card">
-        <div class="ct">Giriş gerekli</div>
-        <p style="font-size:14px;margin-bottom:14px">Yönetim sayfası için önce ana uygulamada oturum açmalısın.</p>
-        <a class="btn pri" href="index.html">Giriş sayfasına git</a>
-      </div>`;
+    location.replace('index.html?auth=login');
     return;
   }
   try {
     const uid = authUserId();
     if (!uid) {
-      area.innerHTML = `
-        <div class="card">
-          <div class="alert err" style="margin:0">Oturum bilgisi eksik. Çıkış yapıp tekrar giriş yap.</div>
-          <p style="margin-top:14px"><a class="btn pri" href="index.html">Ana sayfa</a></p>
-        </div>`;
+      location.replace('index.html?auth=login');
       return;
     }
     const me = await sbRegistry(`?id=eq.${encodeURIComponent(uid)}&select=id,email,role`, { method: 'GET' });
@@ -128,12 +119,7 @@ async function baslat() {
       return;
     }
     if (me[0].role !== 'admin') {
-      area.innerHTML = `
-        <div class="card">
-          <div class="ct">Erişim reddedildi</div>
-          <p style="font-size:14px;margin-bottom:12px">Bu sayfa yalnızca <strong>yönetici</strong> rolüne sahip hesaplar içindir.</p>
-          <p class="sub" style="margin:0">Giriş yaptığın hesap: <strong>${escapeHtml(me[0].email || '')}</strong></p>
-        </div>`;
+      location.replace('index.html');
       return;
     }
 
