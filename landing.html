@@ -1,154 +1,185 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aile Cüzdanı - Akıllı bütçe ve taksit takibi</title>
-<style>
-:root{--bg:#0f1115;--card:#171a21;--text:#eef1f7;--muted:#9ca3b3;--blue:#378ADD;--green:#1D9E75;--border:rgba(255,255,255,.12);--r:12px;--rl:18px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:radial-gradient(1200px 600px at 20% -10%,#1c2438 0%,#0f1115 60%);color:var(--text);line-height:1.5}
-.wrap{max-width:1040px;margin:0 auto;padding:26px 16px 42px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}
-.brand{font-size:18px;font-weight:600}
-.actions{display:flex;gap:10px}
-.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:var(--r);border:.5px solid var(--border);text-decoration:none;color:var(--text);font-size:13px}
-.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
-.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-bottom:18px}
-.card{background:var(--card);border:.5px solid var(--border);border-radius:var(--rl);padding:20px}
-h1{font-size:34px;line-height:1.15;margin-bottom:10px}
-.sub{font-size:15px;color:var(--muted);margin-bottom:18px}
-.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.k{background:rgba(255,255,255,.03);border:.5px solid var(--border);border-radius:10px;padding:12px}
-.k b{display:block;font-size:18px;margin-bottom:4px}
-.k span{font-size:12px;color:var(--muted)}
-.shot{height:100%;min-height:220px;background:linear-gradient(135deg,#1f2638,#1a1f2d);border:.5px dashed rgba(255,255,255,.22);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:14px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-.f h3{font-size:14px;margin-bottom:4px}
-.f p{font-size:12px;color:var(--muted)}
-.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
-.shot-card{background:rgba(255,255,255,.03);border:.5px solid var(--border);border-radius:12px;padding:10px;box-shadow:0 10px 24px rgba(0,0,0,.18);transition:transform .25s ease, box-shadow .25s ease}
-.shot-card:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(0,0,0,.24)}
-.shot-box{height:170px;border:.5px solid rgba(255,255,255,.16);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:0;overflow:hidden;background:#111}
-.shot-box img{width:100%;height:100%;object-fit:cover;border-radius:9px;display:block;transition:transform .4s ease, filter .4s ease}
-.shot-card:hover .shot-box img{transform:scale(1.05);filter:saturate(1.06)}
-.shot-cap{font-size:12px;color:var(--muted);margin-top:8px}
-.faq{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-.qa{background:rgba(255,255,255,.03);border:.5px solid var(--border);border-radius:10px;padding:12px}
-.qa b{display:block;font-size:13px;margin-bottom:6px}
-.qa p{font-size:12px;color:var(--muted)}
-.demo-box{margin-top:14px;background:rgba(55,138,221,.10);border:.5px solid rgba(55,138,221,.35);border-radius:12px;padding:12px}
-.demo-box b{font-size:13px}
-.demo-cred{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-.demo-pill{background:rgba(255,255,255,.06);border:.5px solid var(--border);border-radius:999px;padding:6px 10px;font-size:12px}
-.foot{margin-top:18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
-.foot a{color:#b8c8ff;text-decoration:none}
-@media(max-width:850px){.hero{grid-template-columns:1fr}.kpis,.grid{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){h1{font-size:28px}.kpis,.grid,.shots,.faq{grid-template-columns:1fr}.top{flex-direction:column;align-items:flex-start;gap:10px}.shot-box{height:200px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aile Cüzdanı - Akıllı Bütçe ve Taksit Takibi</title>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --card: rgba(23, 26, 33, 0.8);
+            --text: #eef1f7;
+            --muted: #9ca3b3;
+            --blue: #3b82f6;
+            --blue-hover: #2563eb;
+            --green: #10b981;
+            --border: rgba(255, 255, 255, 0.08);
+            --r: 12px;
+            --rl: 20px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: radial-gradient(circle at 0% 0%, #1e293b 0%, #0b0e14 50%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+
+        /* Header */
+        .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 60px; }
+        .brand { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Buttons */
+        .actions { display: flex; gap: 12px; align-items: center; }
+        .btn { 
+            display: inline-flex; align-items: center; justify-content: center; 
+            padding: 10px 20px; border-radius: var(--r); border: 1px solid var(--border); 
+            text-decoration: none; color: var(--text); font-size: 14px; font-weight: 500;
+            transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn:hover { background: rgba(255,255,255,0.05); transform: translateY(-1px); }
+        .btn.pri { background: var(--blue); border-color: var(--blue); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
+        .btn.pri:hover { background: var(--blue-hover); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35); }
+
+        /* Hero Section */
+        .hero { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 24px; }
+        .card { 
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--rl); 
+            padding: 32px; backdrop-filter: blur(10px); 
+        }
+        h1 { font-size: 42px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; letter-spacing: -1px; }
+        .sub { font-size: 17px; color: var(--muted); margin-bottom: 24px; max-width: 90%; }
+
+        /* KPI Grid */
+        .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .k { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 14px; padding: 16px; transition: 0.3s; }
+        .k:hover { border-color: rgba(59, 130, 246, 0.4); }
+        .k b { display: block; font-size: 16px; margin-bottom: 6px; color: #fff; }
+        .k span { font-size: 13px; color: var(--muted); display: block; line-height: 1.4; }
+
+        /* Images & Shots */
+        .shot-box { 
+            height: 100%; border: 1px solid var(--border); border-radius: 14px; 
+            overflow: hidden; background: #000; display: flex;
+        }
+        .shot-box img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s ease; opacity: 0.9; }
+        .shot-card:hover img { transform: scale(1.05); opacity: 1; }
+
+        .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 24px; }
+        .shot-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 18px; padding: 12px; }
+        .shot-cap { font-size: 14px; color: var(--muted); margin: 12px 4px 4px; font-weight: 500; }
+
+        /* Features & FAQ */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 20px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px;}
+        .f h3 { font-size: 16px; margin-bottom: 8px; color: var(--blue); }
+        .f p { font-size: 14px; color: var(--muted); }
+
+        .faq { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 30px; }
+        .qa { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .qa b { font-size: 15px; display: block; margin-bottom: 8px; color: #fff; }
+        .qa p { font-size: 14px; color: var(--muted); }
+
+        /* Demo Box */
+        .demo-box { margin-top: 30px; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.05)); border: 1px solid rgba(59,130,246,0.2); border-radius: 16px; padding: 24px; text-align: center; }
+        .demo-pill { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; font-size: 13px; font-family: monospace; }
+
+        .foot { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+        .foot a { color: var(--muted); text-decoration: none; margin-left: 15px; }
+        .foot a:hover { color: #fff; }
+
+        @media(max-width:850px) {
+            .hero, .shots, .faq { grid-template-columns: 1fr; }
+            .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 32px; }
+        }
+    </style>
 </head>
 <body>
-<script>
-  try {
-    const t = localStorage.getItem('ac_access_token');
-    if (t) location.replace('index.html?app=1');
-  } catch (_) {}
-</script>
+
 <div class="wrap">
-  <div class="top">
-    <div class="brand">Aile Cüzdanı</div>
-    <div class="actions">
-      <a class="btn" href="index.html?app=1&auth=login">Giriş</a>
-      <a class="btn pri" href="index.html?app=1&auth=signup">Kayıt ol</a>
-    </div>
-  </div>
+    <header class="top">
+        <div class="brand">Aile Cüzdanı</div>
+        <div class="actions">
+            <a class="btn" href="index.html?app=1&auth=login">Giriş Yap</a>
+            <a class="btn pri" href="index.html?app=1&auth=signup">Ücretsiz Kayıt</a>
+        </div>
+    </header>
 
-  <div class="hero">
-    <div class="card">
-      <h1>Hane bütçeni tek yerden yönet.</h1>
-      <p class="sub">Harcamaları takip et, taksitleri kaçırma, aile üyelerine göre dağılımı gör. Ekstre yükleyip işlemleri saniyeler içinde kaydet.</p>
-      <div class="actions" style="margin-bottom:14px">
-        <a class="btn pri" href="index.html?app=1&auth=signup">Ücretsiz başla</a>
-        <a class="btn" href="index.html?app=1&auth=login">Hesabım var</a>
-      </div>
-      <div class="kpis">
-        <div class="k"><b>Dashboard</b><span>Aylık trend, üye bazlı harcama ve kategori dağılımı</span></div>
-        <div class="k"><b>Taksit Takibi</b><span>Gecikme ve yaklaşan ödeme bildirimleri</span></div>
-        <div class="k"><b>Ekstre İçe Aktar</b><span>Garanti / Enpara satırlarını hızlı kaydetme</span></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="shot-box" style="height:100%;min-height:220px"><img src="assets/landing/shot-dashboard.png" alt="Dashboard demo ekranı"></div>
-    </div>
-  </div>
+    <main>
+        <section class="hero">
+            <div class="card">
+                <h1>Hane bütçeni tek yerden yönet.</h1>
+                <p class="sub">Gereksiz masrafları kısın, taksitlerinizi unutmayın. Tüm aile tek bir cüzdan üzerinden finansal hedeflerine odaklansın.</p>
+                
+                <div class="kpis">
+                    <div class="k"><b>Dashboard</b><span>Aylık trend ve üye bazlı harcama takibi.</span></div>
+                    <div class="k"><b>Taksitler</b><span>Yaklaşan ödemeler için akıllı bildirimler.</span></div>
+                    <div class="k"><b>PDF Aktar</b><span>Bankalardan ekstreleri saniyeler içinde yükle.</span></div>
+                </div>
 
-  <div class="card">
-    <div class="grid">
-      <div class="f"><h3>Çok kullanıcılı yapı</h3><p>Her kullanıcının verisi owner bazlı RLS ile izole edilir.</p></div>
-      <div class="f"><h3>Hızlı düzenleme</h3><p>İşlem satırlarını tablo üzerinde doğrudan düzenleyebilirsin.</p></div>
-      <div class="f"><h3>Yedekleme</h3><p>Yedek al, geri yükle ve geçmiş kayıtlarını güvenceye al.</p></div>
-    </div>
+                <div class="actions" style="margin-top: 32px;">
+                    <a class="btn pri" style="padding: 14px 28px; font-size: 16px;" href="index.html?app=1&auth=signup">Hemen Başla</a>
+                    <a class="btn" style="padding: 14px 28px; font-size: 16px;" href="index.html?app=1&auth=login">Demoyu İncele</a>
+                </div>
+            </div>
+            <div class="shot-box">
+                <img src="assets/landing/shot-dashboard.png" alt="Aile Cüzdanı Dashboard">
+            </div>
+        </section>
 
-    <div class="shots">
-      <div class="shot-card">
-        <div class="shot-box"><img src="assets/landing/shot-dashboard-list.png" alt="Dashboard son işlemler görünümü"></div>
-        <div class="shot-cap">Üye bazlı harcama ve son işlemleri tek bakışta gör.</div>
-      </div>
-      <div class="shot-card">
-        <div class="shot-box"><img src="assets/landing/shot-taksitler.png" alt="Taksitler ekranı"></div>
-        <div class="shot-cap">Gecikmiş ve yaklaşan ödemeleri taksit ekranında yönet.</div>
-      </div>
-      <div class="shot-card">
-        <div class="shot-box"><img src="assets/landing/shot-ekstre-yukle.png" alt="Ekstre yükleme ekranı"></div>
-        <div class="shot-cap">Ekstre PDF yükleyip işlemleri hızlıca içe aktar.</div>
-      </div>
-      <div class="shot-card">
-        <div class="shot-box"><img src="assets/landing/shot-yedekleme.png" alt="Yedekleme ekranı"></div>
-        <div class="shot-cap">Tek tıkla yedek al, gerektiğinde geri yükle.</div>
-      </div>
-    </div>
+        <section class="card">
+            <div class="grid">
+                <div class="f"><h3>🛡️ İzole Veri</h3><p>Her kullanıcı kendi verisini RLS güvenliğiyle korur.</p></div>
+                <div class="f"><h3>⚡ Hızlı Düzenleme</h3><p>Satır içi düzenleme ile verileri anında güncelleyin.</p></div>
+                <div class="f"><h3>☁️ Güvenli Yedek</h3><p>Verilerinizi istediğiniz an dışa aktarın veya geri yükleyin.</p></div>
+            </div>
 
-    <div class="faq">
-      <div class="qa">
-        <b>Verilerim güvenli mi?</b>
-        <p>Veriler kullanıcı bazlı RLS ile ayrılır; başka kullanıcıların kayıtları görünmez.</p>
-      </div>
-      <div class="qa">
-        <b>Telefonumdan kullanabilir miyim?</b>
-        <p>Evet. Arayüz mobil uyumludur ve günlük kullanım için optimize edilmiştir.</p>
-      </div>
-      <div class="qa">
-        <b>Ekstredeki işlemleri toplu aktarabilir miyim?</b>
-        <p>Garanti/Enpara/Yapı Kredi ekstrelerinden işlemler seçilerek aktarılabilir.</p>
-      </div>
-      <div class="qa">
-        <b>Sonradan düzenleme var mı?</b>
-        <p>İşlemler sayfasında satır içi düzenleme ile tarih/tutar/kategori/üye değiştirilebilir.</p>
-      </div>
-    </div>
+            <div class="shots">
+                <div class="shot-card">
+                    <div class="shot-box" style="height: 200px;"><img src="assets/landing/shot-taksitler.png" alt="Taksit Takibi"></div>
+                    <p class="shot-cap">Taksitlerinizi listeleyin ve ödeme günlerini takip edin.</p>
+                </div>
+                <div class="shot-card">
+                    <div class="shot-box" style="height: 200px;"><img src="assets/landing/shot-ekstre-yukle.png" alt="Ekstre Aktarımı"></div>
+                    <p class="shot-cap">Banka ekstrelerini tek tıkla sisteme işleyin.</p>
+                </div>
+            </div>
 
-    <div class="demo-box">
-      <b>Canlı demo hesabı</b>
-      <div class="demo-cred">
-        <span class="demo-pill">Kullanıcı: <strong>demo@ailecuzdani.com</strong></span>
-        <span class="demo-pill">Şifre: <strong>123456</strong></span>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:8px">
-        Demo verisi düzenli olarak sıfırlanabilir. Giriş için aşağıdaki butonu kullan.
-      </div>
-    </div>
+            <div class="faq">
+                <div class="qa">
+                    <b>Hangi bankaları destekliyor?</b>
+                    <p>Garanti, Enpara ve Yapı Kredi ekstreleri için tam uyumluluk sunuyoruz.</p>
+                </div>
+                <div class="qa">
+                    <b>Mobil uygulama var mı?</b>
+                    <p>PWA desteği sayesinde telefonunuza "Ana Ekrana Ekle" diyerek uygulama gibi kullanabilirsiniz.</p>
+                </div>
+            </div>
 
-    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
-      <a class="btn pri" href="index.html?app=1&auth=signup">Hemen ücretsiz başla</a>
-      <a class="btn" href="index.html?app=1&auth=login">Giriş yap</a>
-      <a class="btn" href="index.html?app=1&auth=login">Demo'yu dene</a>
-    </div>
+            <div class="demo-box">
+                <h4 style="margin-bottom: 12px;">Hemen Denemek İster Misiniz?</h4>
+                <div class="actions" style="justify-content: center; margin-bottom: 15px;">
+                    <span class="demo-pill">E-posta: demo@ailecuzdani.com</span>
+                    <span class="demo-pill">Şifre: 123456</span>
+                </div>
+                <a class="btn pri" href="index.html?app=1&auth=login">Demo Hesabıyla Giriş Yap</a>
+            </div>
+        </section>
+    </main>
 
-    <div class="foot">
-      <div>© Aile Cüzdanı</div>
-      <div><a href="privacy.html">Gizlilik Politikası</a> · <a href="terms.html">Kullanıcı Sözleşmesi</a></div>
-    </div>
-  </div>
+    <footer class="foot">
+        <div>© 2026 Aile Cüzdanı. Tüm hakları saklıdır.</div>
+        <div>
+            <a href="privacy.html">Gizlilik</a>
+            <a href="terms.html">Kullanım Koşulları</a>
+        </div>
+    </footer>
 </div>
+
 </body>
 </html>
