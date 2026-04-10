@@ -815,9 +815,9 @@ function krediOnizle(){
     // Uyarı: bugünden önce başlamış krediler için ödenmişler hesaplanacak
     const bugun=new Date();
     const ilk=new Date(ilkOdeme);
-    let gecenAy=(bugun.getFullYear()-ilk.getFullYear())*12+(bugun.getMonth()-ilk.getMonth());
-    if(bugun.getDate()<ilk.getDate()) gecenAy--;
-    gecenAy=Math.max(0,gecenAy);
+    // Her taksit tarihini tek tek kontrol et — bugün >= o tarih ise ödenmiş say
+    let gecenAy=0;
+    for(let i=0;i<toplam;i++){const t=new Date(ilkOdeme);t.setMonth(t.getMonth()+i);if(bugun>=t)gecenAy++;else break;}
     const kalan=Math.max(0,toplam-gecenAy);
     if(gecenAy>0&&gecenAy<toplam){
       uyariEl.textContent=`ℹ ${gecenAy} taksit geçmiş (ödenmiş), ${kalan} taksit oluşturulacak`;
@@ -902,14 +902,10 @@ async function krediEkle(){
   const notlar=document.getElementById('kNotlar').value;
   if(!ad||!aylikTaksit||!toplamTaksit||!ilkOdeme){toast('Ad, taksit tutarı, vade ve ilk ödeme tarihi zorunlu',true);return;}
   
-  // Bugüne kadar kaç taksit geçmiş — tam yıl/ay farkı ile hesapla
+  // Her taksit tarihini tek tek kontrol et — bugün >= o tarih ise ödenmiş say
   const bugun=new Date();
-  const ilk=new Date(ilkOdeme);
-  // İlk ödeme günü henüz gelmediyse o ay sayılmaz
-  let gecenAy=(bugun.getFullYear()-ilk.getFullYear())*12+(bugun.getMonth()-ilk.getMonth());
-  // Bugün ilk ödeme gününden önceyse, bu ay henüz gelmemiş
-  if(bugun.getDate()<ilk.getDate()) gecenAy--;
-  gecenAy=Math.max(0,gecenAy);
+  let gecenAy=0;
+  for(let i=0;i<toplamTaksit;i++){const t=new Date(ilkOdeme);t.setMonth(t.getMonth()+i);if(bugun>=t)gecenAy++;else break;}
   const odenmisTaksit=Math.max(0,Math.min(gecenAy,toplamTaksit));
   const kalanTaksit=toplamTaksit-odenmisTaksit;
   
