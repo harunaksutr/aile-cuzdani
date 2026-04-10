@@ -33,12 +33,18 @@ h1{font-size:34px;line-height:1.15;margin-bottom:10px}
 </style>
 </head>
 <body>
+<script>
+  try {
+    const t = localStorage.getItem('ac_access_token');
+    if (t) location.replace('index.html?app=1');
+  } catch (_) {}
+</script>
 <div class="wrap">
   <div class="top">
     <div class="brand">Aile Cüzdanı</div>
     <div class="actions">
-      <a class="btn" href="index.html?auth=login">Giriş</a>
-      <a class="btn pri" href="index.html?auth=signup">Kayıt ol</a>
+      <a class="btn" href="index.html?app=1&auth=login">Giriş</a>
+      <a class="btn pri" href="index.html?app=1&auth=signup">Kayıt ol</a>
     </div>
   </div>
 
@@ -47,8 +53,8 @@ h1{font-size:34px;line-height:1.15;margin-bottom:10px}
       <h1>Hane bütçeni tek yerden yönet.</h1>
       <p class="sub">Harcamaları takip et, taksitleri kaçırma, aile üyelerine göre dağılımı gör. Ekstre yükleyip işlemleri saniyeler içinde kaydet.</p>
       <div class="actions" style="margin-bottom:14px">
-        <a class="btn pri" href="index.html?auth=signup">Ücretsiz başla</a>
-        <a class="btn" href="index.html?auth=login">Hesabım var</a>
+        <a class="btn pri" href="index.html?app=1&auth=signup">Ücretsiz başla</a>
+        <a class="btn" href="index.html?app=1&auth=login">Hesabım var</a>
       </div>
       <div class="kpis">
         <div class="k"><b>Dashboard</b><span>Aylık trend, üye bazlı harcama ve kategori dağılımı</span></div>
