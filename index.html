@@ -47,6 +47,14 @@ th{text-align:left;font-size:11px;font-weight:500;color:var(--muted);padding:6px
 td{padding:9px 8px;border-bottom:.5px solid var(--border);color:var(--text)}
 tr:last-child td{border-bottom:none}td.amt{font-weight:500;text-align:right;white-space:nowrap}td.mu{color:var(--muted)}
 .tr-h:hover{background:var(--bg)}
+.member-table{table-layout:fixed;min-width:0}
+.member-table th,.member-table td{vertical-align:middle}
+.member-table th:nth-child(1),.member-table td:nth-child(1){width:56px}
+.member-table th:nth-child(3),.member-table td:nth-child(3){width:88px;text-align:center}
+.member-table th:nth-child(4),.member-table td:nth-child(4){width:78px;text-align:right}
+.member-name{display:flex;align-items:center;gap:8px;min-width:0}
+.member-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.member-color{width:32px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:1px}
 /* Mobilde sütun gizle */
 .hide-mob{display:table-cell}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -1592,15 +1600,17 @@ async function uyeListesiGoster() {
   const el = document.getElementById('uyeL');
   if (!el) return;
   if (!_uyeler.length) { el.innerHTML='<div class="loader">Üye yok</div>'; return; }
-  el.innerHTML = `<table>
+  el.innerHTML = `<table class="member-table">
     <thead><tr><th>#</th><th>Üye</th><th>Renk</th><th></th></tr></thead>
     <tbody>${_uyeler.map((u,i) => `<tr class="tr-h">
       <td class="mu">${u.sira}</td>
-      <td style="display:flex;align-items:center;gap:8px;padding:9px 8px">
-        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${u.renk};flex-shrink:0"></span>
+      <td>
+        <span class="member-name">
+          <span class="member-dot" style="background:${u.renk}"></span>
         ${u.ad}
+        </span>
       </td>
-      <td><input type="color" value="${u.renk}" onchange="uyeRenkGuncelle('${u.id}',this.value,'${u.slug}')" style="width:32px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:1px"></td>
+      <td><input class="member-color" type="color" value="${u.renk}" onchange="uyeRenkGuncelle('${u.id}',this.value,'${u.slug}')"></td>
       <td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="uyeSil('${u.id}','${u.ad}')">Sil</button></td>
     </tr>`).join('')}</tbody>
   </table>`;
