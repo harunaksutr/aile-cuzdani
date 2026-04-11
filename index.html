@@ -608,7 +608,22 @@ async function initAuth() {
       localStorage.removeItem('ac_user_id');
     }
   });
-  const { data: { session } } = await sbAuth.auth.getSession();
+  let { data: { session } } = await sbAuth.auth.getSession();
+  // OAuth PKCE dönüşü: ?code= ile gelindiyse oturumu takas et
+  if (!session) {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      try {
+        const ex = await sbAuth.auth.exchangeCodeForSession(code);
+        if (!ex.error && ex.data?.session) session = ex.data.session;
+      } catch (e) {
+        console.warn('OAuth code exchange', e);
+      }
+      const clean = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, '', clean);
+    }
+  }
   _accessToken = session?.access_token ?? null;
   if (session) {
     localStorage.setItem('ac_access_token', session.access_token);
@@ -645,8 +660,17 @@ async function authKayitOl() {
   if (!email || !pass) { errEl.textContent = 'E-posta ve şifre gereklidir.'; errEl.style.display = 'block'; return; }
   if (pass.length < 6) { errEl.textContent = 'Şifre en az 6 karakter olmalıdır.'; errEl.style.display = 'block'; return; }
   try {
-    const { error } = await sbAuth.auth.signUp({ email, password: pass });
+    const { data, error } = await sbAuth.auth.signUp({ email, password: pass });
     if (error) throw error;
+    // E-posta doğrulaması kapalıysa oturum hemen gelir
+    if (data?.session) {
+      _accessToken = data.session.access_token;
+      localStorage.setItem('ac_access_token', data.session.access_token);
+      localStorage.setItem('ac_user_id', data.session.user.id);
+      document.getElementById('authGate').style.display = 'none';
+      await devamBootstrap();
+      return;
+    }
     okEl.textContent = 'Kayıt başarılı! E-postanızı doğrulayın, ardından giriş yapabilirsiniz.';
     okEl.style.display = 'block';
   } catch (e) {
@@ -666,8 +690,14 @@ async function authEmailSifre() {
     return;
   }
   try {
-    const { error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
+    // Oturumu hemen yaz (onAuthStateChange gecikirse ilk API istekleri anon kalırdı)
+    if (data?.session) {
+      _accessToken = data.session.access_token;
+      localStorage.setItem('ac_access_token', data.session.access_token);
+      localStorage.setItem('ac_user_id', data.session.user.id);
+    }
     document.getElementById('authGate').style.display = 'none';
     await devamBootstrap();
   } catch (e) {
@@ -681,10 +711,12 @@ async function authGoogle() {
   errEl.style.display = 'none';
   try {
     // Supabase OAuth — Firebase bypass
+    const redirectTo = window.location.href.split('#')[0].split('?')[0];
     const { error } = await sbAuth.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + window.location.pathname
+        redirectTo,
+        queryParams: { prompt: 'select_account' }
       }
     });
     if (error) throw error;
