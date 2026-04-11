@@ -119,7 +119,20 @@ async function baslat() {
       return;
     }
     if (me[0].role !== 'admin') {
-      location.replace('index.html?app=1');
+      area.innerHTML = `
+        <div class="card">
+          <div class="alert warn" style="margin:0">
+            Bu oturumda yönetici rolü yok. Google ile giriş yaptıysanız, e-posta/şifre ile oluşturduğunuz hesaptan
+            <strong>farklı bir kullanıcı kimliği (UUID)</strong> oluşmuş olabilir; admin kaydı eski kimliğe bağlıdır.
+          </div>
+          <p style="margin-top:14px;font-size:13px;color:var(--text);line-height:1.6">
+            <strong>Çözüm:</strong> Repodaki <code style="font-size:12px">supabase-sync-admin-same-email.sql</code>
+            dosyasını (veya <code style="font-size:12px">supabase-grant-admin.sql</code>) Supabase SQL Editor’de çalıştırın;
+            Google hesabınızın UUID’sini kullanın. İsterseniz Authentication → Users’ta aynı e-postalı iki satır görürsünüz:
+            biri email, biri Google — uzun vadede Supabase’te hesap birleştirme (identity linking) ayarlarına bakın.
+          </p>
+          <p style="margin-top:12px"><a class="btn" href="index.html?app=1">Uygulamaya dön</a></p>
+        </div>`;
       return;
     }
 
