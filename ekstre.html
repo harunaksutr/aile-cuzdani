@@ -164,7 +164,7 @@ const KAT_MAP = [
 ];
 
 function kategoriTahmin(aciklama) {
-  const lower = aciklama.toLowerCase();
+  const lower = aciklama.toLocaleLowerCase('tr-TR');
   for (const m of KAT_MAP) {
     if (m.keys.some(k => lower.includes(k))) return m.kat;
   }
@@ -172,6 +172,28 @@ function kategoriTahmin(aciklama) {
 }
 
 function log(msg) { document.getElementById('log').textContent = msg; }
+
+/**
+ * PDF.js metninde İ/ı/I ve Ö/ö sık bozulur (font/encoding). Kontrol karakterlerini siler.
+ */
+function pdfMetinNormalizeEt(t) {
+  if (t == null || t === '') return '';
+  let s = String(t);
+  s = s.replace(/\uFFFD/g, '');
+  s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+  try { s = s.normalize('NFC'); } catch (e) {}
+  return s;
+}
+
+/**
+ * Türkçe güvenli karşılaştırma: tr-TR küçük harf + aksanları ASCII'ye indir (skip regex için).
+ * Düz toLowerCase() kullanma — "İ".toLowerCase() bazı ortamlarda "i" değil.
+ */
+function turkceRegexFold(s) {
+  return s.toLocaleLowerCase('tr-TR')
+    .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ı/g, 'i')
+    .replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/â/g, 'a');
+}
 
 // Drag & drop
 const dz = document.getElementById('dropZone');
@@ -218,12 +240,13 @@ async function pdfYukle(file) {
         if (satir.trim()) satirlar.push(satir.trim());
         tumMetin += satirlar.join('\n') + '\n';
       }
+      tumMetin = pdfMetinNormalizeEt(tumMetin);
       // Banka otomatik tespit
-      const metinKisa = tumMetin.substring(0, 500).toLowerCase();
+      const metinKisa = turkceRegexFold(tumMetin.substring(0, 500));
       let tespit = seciliBanka;
       if (metinKisa.includes('garanti') || metinKisa.includes('bonus')) tespit = 'garanti';
       else if (metinKisa.includes('enpara')) tespit = 'enpara';
-      else if (metinKisa.includes('yapı kredi') || metinKisa.includes('worldcard')) tespit = 'yapı_kredi';
+      else if (metinKisa.includes('yapi kredi') || metinKisa.includes('worldcard')) tespit = 'yapı_kredi';
       else if (metinKisa.includes('qnb') || metinKisa.includes('qnbcard') || metinKisa.includes('finansbank')) tespit = 'qnb';
       bankaSec(tespit);
 
@@ -290,7 +313,6 @@ function parseEtEnpara(metin) {
   const tarihRe  = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
   const tutarRe  = /(-?\s?\d{1,3}(?:\.\d{3})*,\d{2})\s*TL\s*$/i;
   const taksitRe = /\b(\d+)\/(\d+)\b/;
-  const skipRe   = /^ödeme\s*-|enpara\.com/i;
 
   for (const satir of birlesik) {
     const match = satir.match(tarihRe);
@@ -298,8 +320,9 @@ function parseEtEnpara(metin) {
     const tarih = `${match[3]}-${match[2]}-${match[1]}`;
     const kalan = match[4].trim();
 
-    // Ödeme satırlarını atla
-    if (skipRe.test(kalan)) continue;
+    // Ödeme satırlarını atla (PDF'te İ/ı bozulabilir — fold ile kontrol)
+    const kf = turkceRegexFold(kalan);
+    if (/^odeme\s*-|enpara\.com/.test(kf)) continue;
 
     const tutarMatch = kalan.match(tutarRe);
     if (!tutarMatch) continue;
@@ -468,7 +491,7 @@ async function kaydet() {
 
 function parseEtQnb(metin) {
   const islemler = [];
-  const satirlar = metin.split('\n');
+  const satirlar = pdfMetinNormalizeEt(metin).split('\n');
 
   // QNB: DD/MM/YYYY  AÇIKLAMA  TUTAR  [TAKSİT a/b]
   // Tutar İngilizce format: 1,234.56 (virgül binlik). Taksit satır sonunda "3/3" olabiliyor — tutar bundan ÖNCE.
@@ -476,9 +499,9 @@ function parseEtQnb(metin) {
   const tutarRe       = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*$/;
   const trailTaksitRe = /\s+(\d{1,2})\/(\d{1,2})\s*$/;
   const taksitRe      = /\b(\d{1,2})\/(\d{1,2})\b(?!\d)/;
-  // Kart ödemesi, dönem özeti, parapuan özeti, genel toplam
-  const skipRe = /ödeme\s*-\s*tesekk|ödeme\s*-|teşekkür\s+ederiz|önceki\s*dönem\s*bakiye|önceki\s*dönem|devir|parapuan\s*kazanımı|parapuan\s*kullanımı|e-ticaret\s+kampanyası|genel\s+toplam|hesap\s+özeti|^para\s*puan\s+işlemleriniz/i;
-  const faizRe = /\(ana para:/i;
+  // Skip: PDF'te İ→I, Ö→O düşebilir — turkceRegexFold ile ASCII kontrol
+  const skipFolded = /(?:^|\s)(?:o|ö)?deme\s*-\s*tesekk|(?:^|\s)(?:o|ö)?deme\s*-|tesekkur\s+ederiz|onceki\s*donem\s*bakiye|onceki\s*donem\b|devir|parapuan\s*kazanimi|parapuan\s*kullanimi|e-ticaret\s*kampanyasi|genel\s*toplam|hesap\s*ozeti|^para\s*puan\s*islemleriniz\b/;
+  const faizRe = /\(ana\s*para\s*:/i;
 
   for (const satir of satirlar) {
     const s = satir.trim();
@@ -488,7 +511,7 @@ function parseEtQnb(metin) {
     const tarih = `${match[3]}-${match[2]}-${match[1]}`;
     const kalan = match[4].trim();
 
-    if (skipRe.test(kalan)) continue;
+    if (skipFolded.test(turkceRegexFold(kalan))) continue;
     if (faizRe.test(kalan)) continue;
 
     const endTaksit = kalan.match(trailTaksitRe);
@@ -525,7 +548,7 @@ function parseEtQnb(metin) {
     let aciklama = kalanForTutar
       .replace(tutarRe, '')
       .replace(/\([^)]*\)/g, '')
-      .replace(/bu alışverişinizin sipariş kodu:.*/i, '')
+      .replace(/\s+bu\s+.+sipari[şsŞ]\s*kodu\s*:.*/i, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
 
