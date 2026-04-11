@@ -528,28 +528,8 @@ async function kaydet() {
         })
       });
 
-      // Taksitliyse installments'a da ekle (hangi taksit olursa olsun)
-      if (r.toplam_taksit > 1) {
-        // Installments duplicate kontrol
-        const tKontrol = await fetch(
-          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&toplam_taksit=eq.${r.toplam_taksit}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
-          { headers: apiHeaders() }
-        );
-        const tMevcut = await tKontrol.json();
-        if (tMevcut.length === 0) {
-          const sonOdeme = new Date(r.tarih);
-          sonOdeme.setMonth(sonOdeme.getMonth() + r.kalan_taksit - 1);
-          await fetch(`${SB_URL}/rest/v1/installments`, {
-            method: 'POST', headers: apiHeaders(),
-            body: JSON.stringify({
-              aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
-              toplam_taksit: r.toplam_taksit, kalan_taksit: r.kalan_taksit,
-              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor',
-              owner_id: authUserId()
-            })
-          });
-        }
-      }
+      // NOT: Ekstre = geçmiş hareket; taksit satırları için installments eklenmez.
+      // Aksi halde son_odeme geçmişe düşer ve tümü "Gecikmiş" bildirimi üretirdi.
       basarili++;
     } catch(e) { hata++; }
   }
