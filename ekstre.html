@@ -50,7 +50,7 @@ td.mu{color:var(--muted)}
 </head>
 <body>
 
-<a class="back-btn" href="index.html">← Dashboard'a dön</a>
+<a class="back-btn" href="index.html?app=1">← Dashboard'a dön</a>
 <h2>Garanti BBVA Ekstre Yükle</h2>
 
 <div class="card" id="uploadCard">
@@ -108,7 +108,14 @@ td.mu{color:var(--muted)}
 <script>
 const SB_URL = 'https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function apiHeaders(){
+  const token = authToken() || SB_KEY;
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+// Auth yoksa login'e yönlendir
+if(!authToken()){ location.href = 'index.html?app=1&auth=login'; }
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -178,13 +185,13 @@ async function pdfYukle(file) {
 
   // Kategorileri yükle
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, {headers: HEADERS});
+    const r = await fetch(`${SB_URL}/rest/v1/categories?aktif=eq.true&order=sira.asc&owner_id=eq.${encodeURIComponent(authUserId())}`, {headers: apiHeaders()});
     kategoriler = (await r.json()).map(k => k.ad);
   } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
 
   // Üyeleri yükle
   try {
-    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, {headers: HEADERS});
+    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc&owner_id=eq.${encodeURIComponent(authUserId())}`, {headers: apiHeaders()});
     uyeler = await ru.json();
   } catch(e) { uyeler = [{slug:'harun',ad:'Harun'}]; }
 
@@ -257,7 +264,7 @@ function parseEtGaranti(metin) {
     if (taksitMatch) { toplamTaksit=parseInt(taksitMatch[2]); taksitNo=parseInt(taksitMatch[3]); kalanTaksit=toplamTaksit-taksitNo+1; }
     let aciklama = kalan.replace(taksitRe,'').replace(tutarRe,'').replace(/\s+\d+\s*$/,'').replace(/\s{2,}/g,' ').trim();
     if (!aciklama || aciklama.length < 2) continue;
-    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:'harun', secili:true });
+    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
   }
   sonucGoster(islemler);
 }
@@ -331,7 +338,7 @@ function parseEtEnpara(metin) {
       taksit_no:     taksitNo,
       kategori: kategoriTahmin(aciklama),
       kaynak: 'enpara',
-      uye: 'harun',
+      uye: (uyeler[0]?.slug||'harun'),
       secili: true
     });
   }
@@ -379,10 +386,7 @@ function tabloGoster() {
       </td>
       <td>
         <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
-          <option value="harun" ${r.uye==='harun'?'selected':''}>Harun</option>
-          <option value="aslı" ${r.uye==='aslı'?'selected':''}>Aslı</option>
-          <option value="zeynep" ${r.uye==='zeynep'?'selected':''}>Zeynep</option>
-          <option value="zehra" ${r.uye==='zehra'?'selected':''}>Zehra</option>
+          ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
         </select>
       </td>
       <td class="amt">${r.tutar.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
@@ -407,18 +411,19 @@ async function kaydet() {
     try {
       // Duplicate kontrol — aynı tarih + açıklama + tutar var mı?
       const kontrol = await fetch(
-        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${r.kaynak||seciliBanka}&select=id`,
-        { headers: HEADERS }
+        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${encodeURIComponent(r.kaynak||seciliBanka)}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
+        { headers: apiHeaders() }
       );
       const mevcut = await kontrol.json();
       if (mevcut.length > 0) { atlandi++; continue; }
 
       // Transactions'a ekle
       await fetch(`${SB_URL}/rest/v1/transactions`, {
-        method: 'POST', headers: HEADERS,
+        method: 'POST', headers: apiHeaders(),
         body: JSON.stringify({
           tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
-          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye, notlar: ''
+          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye,
+          notlar: '', owner_id: authUserId()
         })
       });
 
@@ -426,19 +431,20 @@ async function kaydet() {
       if (r.toplam_taksit > 1) {
         // Installments duplicate kontrol
         const tKontrol = await fetch(
-          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&toplam_taksit=eq.${r.toplam_taksit}&select=id`,
-          { headers: HEADERS }
+          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&toplam_taksit=eq.${r.toplam_taksit}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
+          { headers: apiHeaders() }
         );
         const tMevcut = await tKontrol.json();
         if (tMevcut.length === 0) {
           const sonOdeme = new Date(r.tarih);
           sonOdeme.setMonth(sonOdeme.getMonth() + r.kalan_taksit - 1);
           await fetch(`${SB_URL}/rest/v1/installments`, {
-            method: 'POST', headers: HEADERS,
+            method: 'POST', headers: apiHeaders(),
             body: JSON.stringify({
               aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
               toplam_taksit: r.toplam_taksit, kalan_taksit: r.kalan_taksit,
-              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor'
+              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor',
+              owner_id: authUserId()
             })
           });
         }
@@ -456,7 +462,7 @@ async function kaydet() {
   if (hata     > 0) mesajlar.push(`${hata} hata`);
 
   document.getElementById('alertBox').innerHTML = basarili > 0 || atlandi > 0
-    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
+    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html?app=1" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
     : `<div class="alert err">Kayıt başarısız. Bağlantıyı kontrol edin.</div>`;
 }
 
