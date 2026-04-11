@@ -47,14 +47,6 @@ th{text-align:left;font-size:11px;font-weight:500;color:var(--muted);padding:6px
 td{padding:9px 8px;border-bottom:.5px solid var(--border);color:var(--text)}
 tr:last-child td{border-bottom:none}td.amt{font-weight:500;text-align:right;white-space:nowrap}td.mu{color:var(--muted)}
 .tr-h:hover{background:var(--bg)}
-.member-table{table-layout:fixed;min-width:0}
-.member-table th,.member-table td{vertical-align:middle}
-.member-table th:nth-child(1),.member-table td:nth-child(1){width:56px}
-.member-table th:nth-child(3),.member-table td:nth-child(3){width:88px;text-align:center}
-.member-table th:nth-child(4),.member-table td:nth-child(4){width:78px;text-align:right}
-.member-name{display:flex;align-items:center;gap:8px;min-width:0}
-.member-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.member-color{width:32px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:1px}
 /* Mobilde sütun gizle */
 .hide-mob{display:table-cell}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -117,49 +109,8 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   .mv{font-size:17px}
 }
 </style>
-<link rel="stylesheet" href="styles/auth.css">
 </head>
 <body>
-<div id="authGate" class="auth-gate">
-  <div class="auth-card">
-    <h1>Aile Cüzdanı</h1>
-    <p id="authSubtitle">Hesabınla giriş yap veya yeni hesap oluştur.</p>
-    <div class="auth-tabs">
-      <button type="button" id="tabLogin" class="active" onclick="authTabDegistir('login')">Giriş</button>
-      <button type="button" id="tabSignup" onclick="authTabDegistir('signup')">Kayıt ol</button>
-    </div>
-    <div class="auth-form">
-      <label>E-posta</label>
-      <input id="authEmail" type="email" placeholder="ornek@mail.com">
-      <label>Sifre</label>
-      <input id="authPassword" type="password" placeholder="En az 6 karakter">
-      <label id="authKvkkWrap" style="display:none;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4">
-        <input id="authKvkk" type="checkbox" style="margin-right:6px;vertical-align:middle">
-        <a href="privacy.html" target="_blank" rel="noopener">Gizlilik politikasını</a> ve
-        <a href="terms.html" target="_blank" rel="noopener">kullanıcı sözleşmesini</a>
-        okudum, kabul ediyorum.
-      </label>
-      <button type="button" class="auth-submit" id="authSubmitBtn" onclick="authDevam()">Giriş yap</button>
-      <button type="button" class="auth-link" id="authRecoverBtn" onclick="authSifreSifirla()">Şifremi unuttum</button>
-      <p id="authMessage" class="auth-message"></p>
-    </div>
-  </div>
-</div>
-
-<div id="setupGate" class="auth-gate" style="display:none">
-  <div class="auth-card">
-    <h2>İlk kurulum</h2>
-    <p>Hesabın hazır. İlk kullanım için temel üyeler ve kategoriler oluşturalım.</p>
-    <div class="auth-form">
-      <label>Birinci üye adı</label>
-      <input id="setupMember1" type="text" value="Ben">
-      <label>İkinci üye adı (isteğe bağlı)</label>
-      <input id="setupMember2" type="text" placeholder="Eş / Çocuk / Ortak">
-      <button type="button" class="auth-submit" onclick="ilkKurulumuTamamla()">Kurulumu tamamla</button>
-      <p id="setupMessage" class="auth-message"></p>
-    </div>
-  </div>
-</div>
 <nav>
   <div class="brand">Aile Cüzdanı</div>
   <a onclick="showPage('dashboard')" id="nav-dashboard" class="active">Dashboard</a>
@@ -170,10 +121,8 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a onclick="showPage('ayarlar')"   id="nav-ayarlar">Ayarlar</a>
   <a href="ekstre.html" style="color:var(--amber)">Ekstre Yükle</a>
   <a href="backup.html" style="color:var(--muted)">Yedek</a>
-  <a href="admin.html" style="color:var(--muted)">Yönetim</a>
   <div class="nav-r" style="display:flex;align-items:center;gap:8px">
     <select class="ay-sel" id="ayS" onchange="ayDegisti()"></select>
-    <button onclick="cikisYap()" title="Cikis" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:12px;color:var(--muted);line-height:1">Cikis</button>
     <button onclick="temaToggle()" id="temaBtn" title="Tema" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1">🌙</button>
   </div>
   <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menü">
@@ -192,7 +141,6 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a onclick="showPage('ayarlar');menuKapat()"   id="mob-ayarlar">Ayarlar</a>
   <a href="ekstre.html" style="color:var(--amber);padding:12px 20px;display:block">Ekstre Yükle</a>
   <a href="backup.html" style="padding:12px 20px;display:block">💾 Yedek & Geri Yükle</a>
-  <a href="admin.html" style="padding:12px 20px;display:block;color:var(--muted)">Yönetim</a>
   <div style="padding:8px 16px 4px;display:flex;gap:8px;align-items:center">
     <select class="ay-sel ay-sel-mob" style="flex:1"></select>
     <button onclick="temaToggle()" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1" id="temaBtnMob">🌙</button>
@@ -367,7 +315,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
         <select id="tFilKaynak" onchange="taksitleriYukle()" style="font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;color:var(--text)">
           <option value="">Tüm kartlar</option>
           <option value="garanti">Garanti</option><option value="enpara">Enpara</option>
-          <option value="yapı_kredi">Yapı Kredi</option><option value="nakit">Nakit</option>
+          <option value="yapı_kredi">Yapı Kredi</option><option value="qnb">QNB</option><option value="nakit">Nakit</option>
         </select>
         <select id="tFilUye" onchange="taksitleriYukle()" style="font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;color:var(--text)">
           <option value="">Yükleniyor...</option>
@@ -516,29 +464,6 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   </div>
 
   <div class="card" style="max-width:560px;margin-bottom:12px">
-    <div class="ct">Şifre değiştir</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Giriş yaptığın hesabın şifresini güncelle (en az 6 karakter).</p>
-    <div class="fg" style="margin-bottom:12px">
-      <div class="fgg">
-        <label>Mevcut şifre</label>
-        <input type="password" id="sifreMevcut" autocomplete="current-password" minlength="6" placeholder="Mevcut şifre">
-      </div>
-      <div class="fgg">
-        <label>Yeni şifre</label>
-        <input type="password" id="sifreYeni" autocomplete="new-password" minlength="6" placeholder="Yeni şifre">
-      </div>
-      <div class="fgg">
-        <label>Yeni şifre (tekrar)</label>
-        <input type="password" id="sifreTekrar" autocomplete="new-password" minlength="6" placeholder="Tekrar">
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <button type="button" class="btn pri" onclick="sifreDegistir()">Şifreyi güncelle</button>
-      <span id="sifreMesaj" style="font-size:12px;color:var(--muted);max-width:100%"></span>
-    </div>
-  </div>
-
-  <div class="card" style="max-width:560px;margin-bottom:12px">
     <div class="ct">Bildirimler</div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -589,271 +514,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const APP_CONFIRM_URL='https://harunaksutr.github.io/aile-cuzdani/index.html?app=1';
-const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
-let _authMode = 'login';
-
-function authConfirmRedirectUrl(){
-  try{
-    const here = `${window.location.origin}${window.location.pathname}?app=1`;
-    if(/\.github\.io$/i.test(window.location.hostname)) return here;
-  }catch(_){}
-  return APP_CONFIRM_URL;
-}
-function appModeAktifMi(){
-  try{
-    const sp = new URLSearchParams(window.location.search || '');
-    if(sp.get('app') === '1') return true;
-    if(sp.get('auth')) return true;
-  }catch(_){}
-  const raw = (window.location.hash || '').replace(/^#/, '');
-  if(!raw) return false;
-  const hp = new URLSearchParams(raw);
-  return !!(hp.get('access_token') || hp.get('refresh_token') || hp.get('type'));
-}
-
-function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
-function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
-function authHeaders(){
-  const token = authToken() || SB_KEY;
-  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
-}
-function ownerFilter(table,p=''){
-  if(!OWNER_TABLES.has(table)) return p;
-  const uid = authUserId();
-  const own = `owner_id=eq.${encodeURIComponent(uid)}`;
-  return p ? `${p}&${own}` : own;
-}
-async function authIstek(path, body){
-  const r = await fetch(`${SB_URL}/auth/v1/${path}`, {
-    method: 'POST',
-    headers: {'apikey': SB_KEY, 'Content-Type':'application/json'},
-    body: JSON.stringify(body)
-  });
-  const data = await r.json().catch(() => ({}));
-  if(!r.ok){
-    const raw = data?.msg || data?.message || data?.error_description || '';
-    const code = (data?.error_code || data?.code || '').toString();
-    if(/email_not_confirmed|email not confirmed/i.test(code + raw)){
-      throw new Error('E-posta henüz onaylanmadı. Gelen kutunu ve spam klasörünü kontrol et; onay linkine tıkladıktan sonra tekrar giriş yap.');
-    }
-    throw new Error(raw || 'Kimlik doğrulama hatası');
-  }
-  return data;
-}
-function authMesaj(msg, err=false){
-  const el = document.getElementById('authMessage');
-  if(!el) return;
-  el.textContent = msg || '';
-  el.style.color = err ? '#E24B4A' : (msg ? 'var(--text)' : '');
-}
-function authGovdeScrollKilidi(){
-  const ag = document.getElementById('authGate');
-  const sg = document.getElementById('setupGate');
-  if(!ag || !sg){ document.body.style.overflow=''; return; }
-  const authAcik = getComputedStyle(ag).display !== 'none';
-  const setupAcik = getComputedStyle(sg).display !== 'none';
-  document.body.style.overflow = (authAcik || setupAcik) ? 'hidden' : '';
-}
-function setupMesaj(msg, err=false){
-  const el = document.getElementById('setupMessage');
-  if(!el) return;
-  el.textContent = msg || '';
-  el.style.color = err ? '#E24B4A' : '';
-}
-function authTabDegistir(mode, mesajTemizle){
-  _authMode = mode;
-  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
-  document.getElementById('tabSignup').classList.toggle('active', mode==='signup');
-  document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Giriş yap' : 'Hesap oluştur';
-  const rec = document.getElementById('authRecoverBtn');
-  if(rec) rec.hidden = mode !== 'login';
-  const kvkkWrap = document.getElementById('authKvkkWrap');
-  if(kvkkWrap) kvkkWrap.style.display = mode === 'signup' ? 'block' : 'none';
-  const sub = document.getElementById('authSubtitle');
-  if(sub){
-    sub.textContent = mode==='signup'
-      ? 'Kayıt olduktan sonra e-postana onay linki gelir; linke tıkladıktan sonra giriş yapabilirsin.'
-      : 'Hesabınla giriş yap veya yeni hesap oluştur.';
-  }
-  if(mesajTemizle !== false) authMesaj('');
-}
-function authTabUrlUygula(){
-  try{
-    const p = new URLSearchParams(window.location.search || '');
-    const auth = (p.get('auth') || '').toLowerCase();
-    if(auth === 'signup') authTabDegistir('signup', false);
-    else if(auth === 'login') authTabDegistir('login', false);
-  }catch(_){}
-}
-async function authSifreSifirla(){
-  const email = (document.getElementById('authEmail')?.value || '').trim();
-  if(!email){ authMesaj('Şifre sıfırlama için önce e-posta gir.', true); return; }
-  try{
-    authMesaj('Şifre sıfırlama e-postası gönderiliyor…');
-    const redirRaw = authConfirmRedirectUrl();
-    const redir = encodeURIComponent(redirRaw);
-    await authIstek(`recover?redirect_to=${redir}`, { email, redirect_to: redirRaw });
-    authMesaj('Şifre sıfırlama bağlantısı gönderildi. Gelen kutunu ve spam klasörünü kontrol et.');
-  }catch(e){
-    authMesaj(e.message || 'Şifre sıfırlama isteği başarısız.', true);
-  }
-}
-function authOturumKaydet(data){
-  localStorage.setItem('ac_access_token', data.access_token || '');
-  localStorage.setItem('ac_refresh_token', data.refresh_token || '');
-  localStorage.setItem('ac_user_id', data.user?.id || '');
-  const em = data.user?.email || authJwtPayload(data.access_token || '')?.email || '';
-  if(em) localStorage.setItem('ac_user_email', em);
-}
-/** E-posta onayı / magic link sonrası: #access_token=...&refresh_token=... */
-function authJwtPayload(token){
-  if(!token || typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if(parts.length < 2) return null;
-  try{
-    let b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
-    const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
-    return JSON.parse(atob(b64 + pad));
-  }catch(_){ return null; }
-}
-function authHashTemizle(){
-  const u = window.location.pathname + window.location.search;
-  if(window.location.hash) history.replaceState(null, '', u);
-}
-/** Hash'te token varsa localStorage'a yazar ve true döner */
-function authHashCallbackIsle(){
-  const raw = (window.location.hash || '').replace(/^#/, '');
-  if(!raw) return false;
-  const p = new URLSearchParams(raw);
-  const access = p.get('access_token');
-  const refresh = p.get('refresh_token') || '';
-  if(!access) return false;
-  const pl = authJwtPayload(access);
-  const uid = pl && pl.sub ? pl.sub : '';
-  authOturumKaydet({
-    access_token: access,
-    refresh_token: refresh,
-    user: { id: uid }
-  });
-  authHashTemizle();
-  return true;
-}
-/** access_token JWT süresi en az skewSaniye sonra mı (yoksa yenile) */
-function authJwtGecerli(skewSaniye){
-  const t = authToken();
-  if(!t || t === SB_KEY) return true;
-  const pl = authJwtPayload(t);
-  if(!pl || pl.exp == null) return true;
-  return pl.exp * 1000 > Date.now() + (skewSaniye || 90) * 1000;
-}
-function sbJwtHatasiMetin(txt){
-  return /JWT expired|PGRST303|jwt expired|Invalid JWT|invalid_grant/i.test(String(txt || ''));
-}
-async function authOturumuYenile(){
-  const ref = localStorage.getItem('ac_refresh_token') || '';
-  if(!ref) return false;
-  try{
-    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST',
-      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: ref })
-    });
-    const data = await r.json().catch(() => ({}));
-    if(!r.ok || !data.access_token) return false;
-    const uid = data.user?.id || authJwtPayload(data.access_token)?.sub || authUserId();
-    authOturumKaydet({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token || ref,
-      user: { id: uid }
-    });
-    return true;
-  }catch(_){ return false; }
-}
-async function sbApiFetch(url, init){
-  const run = () => fetch(url, { ...init, headers: { ...authHeaders(), ...(init.headers || {}) } });
-  let r = await run();
-  let txt = await r.text();
-  if(!r.ok && sbJwtHatasiMetin(txt) && localStorage.getItem('ac_refresh_token')){
-    if(await authOturumuYenile()){
-      r = await run();
-      txt = await r.text();
-    }
-  }
-  if(!r.ok) throw new Error(txt);
-  if(!txt || !String(txt).trim()) return null;
-  try{ return JSON.parse(txt); }catch(_){ return txt; }
-}
-function authSignupOturumVar(signData){
-  if(!signData || typeof signData !== 'object') return null;
-  const tok = signData.access_token || signData.session?.access_token;
-  if(!tok) return null;
-  const ref = signData.refresh_token || signData.session?.refresh_token || '';
-  const user = signData.user || (signData.id ? signData : null);
-  return {
-    access_token: tok,
-    refresh_token: ref,
-    user: user || {}
-  };
-}
-async function authDevam(){
-  const email = (document.getElementById('authEmail')?.value || '').trim();
-  const password = document.getElementById('authPassword')?.value || '';
-  if(!email || !password){ authMesaj('E-posta ve şifre zorunlu.', true); return; }
-  try{
-    if(_authMode === 'signup'){
-      const kvkkOk = !!document.getElementById('authKvkk')?.checked;
-      if(!kvkkOk){
-        authMesaj('Kayıt için gizlilik politikası ve kullanıcı sözleşmesi onayı zorunlu.', true);
-        return;
-      }
-      authMesaj('Hesap oluşturuluyor…');
-      const redir = encodeURIComponent(authConfirmRedirectUrl());
-      const signData = await authIstek(`signup?redirect_to=${redir}`, { email, password });
-      const oturum = authSignupOturumVar(signData);
-      if(oturum){
-        authOturumKaydet(oturum);
-        authMesaj('');
-        await uygulamaBaslat();
-        return;
-      }
-      authTabDegistir('login', false);
-      document.getElementById('authPassword').value = '';
-      const kvkk = document.getElementById('authKvkk');
-      if(kvkk) kvkk.checked = false;
-      authMesaj(
-        'Hesap oluşturuldu. Lütfen e-posta adresine gidip gelen kutunu (ve gerekirse spam klasörünü) kontrol et; onay bağlantısına tıkla. Onayladıktan sonra aşağıdan «Giriş yap» ile aynı e-posta ve şifreyle oturum aç.',
-        false
-      );
-      authGovdeScrollKilidi();
-      return;
-    }
-    authMesaj('Giriş yapılıyor…');
-    const loginData = await authIstek('token?grant_type=password', { email, password });
-    authOturumKaydet(loginData);
-    authMesaj('');
-    await uygulamaBaslat();
-  }catch(e){
-    authMesaj(e.message, true);
-    authGovdeScrollKilidi();
-  }
-}
-async function cikisYap(){
-  localStorage.removeItem('ac_access_token');
-  localStorage.removeItem('ac_refresh_token');
-  localStorage.removeItem('ac_user_id');
-  localStorage.removeItem('ac_user_email');
-  location.reload();
-}
-function slugYap(text){
-  return (text||'')
-    .toLowerCase()
-    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
-    .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
-    .replace(/[^a-z0-9]/g,'_')
-    .replace(/_+/g,'_')
-    .replace(/^_|_$/g,'');
-}
+const HEADERS={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
 // Üyeler — Supabase members tablosundan yüklenir
 let _uyeler = [];
 let UYE_ADI  = {};
@@ -904,32 +565,19 @@ function uyeSelectleriDoldur() {
     });
   });
 }
-const KAYNAK_ADI={nakit:'Nakit',havale:'Havale',eft:'EFT',garanti:'Garanti',yapı_kredi:'Yapı Kredi',enpara:'Enpara',
+const KAYNAK_ADI={nakit:'Nakit',havale:'Havale',eft:'EFT',garanti:'Garanti',yapı_kredi:'Yapı Kredi',enpara:'Enpara',qnb:'QNB Finansbank',
   havale_garanti:'Havale/Garanti',havale_enpara:'Havale/Enpara',havale_yapı_kredi:'Havale/YapıKredi',havale_kuveyt_turk:'Havale/Kuveyt',havale_vakıfbank:'Havale/Vakıf',havale_ziraat:'Havale/Ziraat',havale_qnb_finansbank:'Havale/QNB',havale_akbank:'Havale/Akbank',havale_is_bankasi:'Havale/İşBankası',havale_halkbank:'Havale/Halkbank',havale_teb:'Havale/TEB',havale_denizbank:'Havale/Denizbank',havale_ing_bank:'Havale/ING',havale_hsbc:'Havale/HSBC',havale_albaraka:'Havale/Albaraka',havale_turkiye_finans:'Havale/TürkiyeFinans',havale_fibabanka:'Havale/Fiba',havale_sekerbank:'Havale/Şeker',havale_odeabank:'Havale/Odea',havale_nkolay:'Havale/Nkolay',
   eft_garanti:'EFT/Garanti',eft_enpara:'EFT/Enpara',eft_yapı_kredi:'EFT/YapıKredi',eft_kuveyt_turk:'EFT/Kuveyt',eft_vakıfbank:'EFT/Vakıf',eft_ziraat:'EFT/Ziraat',eft_qnb_finansbank:'EFT/QNB',eft_akbank:'EFT/Akbank',eft_is_bankasi:'EFT/İşBankası',eft_halkbank:'EFT/Halkbank',eft_teb:'EFT/TEB',eft_denizbank:'EFT/Denizbank',eft_ing_bank:'EFT/ING',eft_hsbc:'EFT/HSBC',eft_albaraka:'EFT/Albaraka',eft_turkiye_finans:'EFT/TürkiyeFinans',eft_fibabanka:'EFT/Fiba',eft_sekerbank:'EFT/Şeker',eft_odeabank:'EFT/Odea',eft_nkolay:'EFT/Nkolay'};
-const KAYNAK_CLS={nakit:'nakit',havale:'eft',eft:'eft',garanti:'cc',yapı_kredi:'cc',enpara:'eft'};
+const KAYNAK_CLS={nakit:'nakit',havale:'eft',eft:'eft',garanti:'cc',yapı_kredi:'cc',enpara:'eft',qnb:'cc'};
 function kaynakClass(k){return KAYNAK_CLS[k]||(k?.startsWith('havale')?'eft':k?.startsWith('eft')?'eft':'nakit');}
 function kaynakAdi(k){return KAYNAK_ADI[k]||k;}
 
 let secilenAy=bugunAy(),_kategoriler=[],trendC,catC,uyeC;
 
-async function sbGet(t,p=''){
-  const q=ownerFilter(t,p);
-  const data=await sbApiFetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'GET'});
-  return data==null?[]:data;
-}
-async function sbPost(t,b){
-  const body=OWNER_TABLES.has(t)?{...b,owner_id:authUserId()}:b;
-  return sbApiFetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',body:JSON.stringify(body)});
-}
-async function sbPatch(t,p,b){
-  const q=ownerFilter(t,p);
-  return sbApiFetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'PATCH',body:JSON.stringify(b)});
-}
-async function sbDelete(t,p){
-  const q=ownerFilter(t,p);
-  return sbApiFetch(`${SB_URL}/rest/v1/${t}?${q}`,{method:'DELETE'});
-}
+async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:HEADERS});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbPost(t,b){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:HEADERS,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbPatch(t,p,b){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{method:'PATCH',headers:HEADERS,body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbDelete(t,p){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{method:'DELETE',headers:HEADERS});if(!r.ok)throw new Error(await r.text());return r.json();}
 
 function bugunAy(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function bugunTarih(){return new Date().toISOString().split('T')[0];}
@@ -1046,14 +694,6 @@ function uyeGoster(txn){
 }
 
 let _sonIslemCache=[];
-let _islemEditIds = new Set();
-function h(v){
-  return String(v ?? '')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
-}
 function sonIslemGoster(txn){
   _sonIslemCache=txn;
   const sfKat=document.getElementById('sfKat');
@@ -1108,76 +748,13 @@ async function islemleriYukle(){
     if(max<Infinity)data=data.filter(r=>Number(r.tutar)<=max);
     if(!data.length){document.getElementById('islemT').innerHTML='<div class="loader">Sonuç yok</div>';return;}
     const toplam=data.reduce((s,r)=>s+Number(r.tutar),0);
-    const kaynaklar = Object.keys(KAYNAK_ADI);
     document.getElementById('islemT').innerHTML=`
       <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;color:var(--muted)">${data.length} işlem</span><span style="font-weight:500">${formatPara(toplam)}</span></div>
       <table><thead><tr><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
-      <tbody>${data.map(r=>{
-        const edit = _islemEditIds.has(r.id);
-        if(edit){
-          return `<tr class="tr-h">
-            <td><input id="duz_tarih_${r.id}" type="date" value="${h(r.tarih)}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="width:130px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
-            <td><input id="duz_aciklama_${r.id}" type="text" value="${h(r.aciklama)}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="width:100%;min-width:160px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
-            <td class="hide-mob"><select id="duz_kategori_${r.id}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_kategoriler.map(k=>`<option value="${h(k.ad)}" ${k.ad===r.kategori?'selected':''}>${h(k.ad)}</option>`).join('')}</select></td>
-            <td class="hide-mob"><select id="duz_uye_${r.id}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${_uyeler.map(u=>`<option value="${h(u.slug)}" ${u.slug===r.uye?'selected':''}>${h(u.ad)}</option>`).join('')}</select></td>
-            <td><select id="duz_kaynak_${r.id}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)">${kaynaklar.map(k=>`<option value="${h(k)}" ${k===r.kaynak?'selected':''}>${h(kaynakAdi(k))}</option>`).join('')}</select></td>
-            <td class="amt"><input id="duz_tutar_${r.id}" type="number" step="0.01" value="${h(r.tutar)}" onkeydown="islemDuzenleTus(event,'${r.id}')" style="width:120px;text-align:right;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 7px;font-size:12px;color:var(--text)"></td>
-            <td style="white-space:nowrap">
-              <button class="btn pri" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="islemDuzenleKaydet('${r.id}')">Kaydet</button>
-              <button class="btn" style="padding:3px 8px;font-size:11px" onclick="islemDuzenleIptal('${r.id}')">İptal</button>
-            </td>
-          </tr>`;
-        }
-        return `<tr class="tr-h"><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${h(r.aciklama)}</td><td class="mu hide-mob">${h(r.kategori)}</td><td class="mu hide-mob">${h(UYE_ADI[r.uye]||r.uye)}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${h(kaynakAdi(r.kaynak))}</span></td><td class="amt">${formatPara(r.tutar)}</td><td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="islemDuzenleBaslat('${r.id}')">Düzenle</button><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`;
-      }).join('')}</tbody></table>`;
+      <tbody>${data.map(r=>`<tr class="tr-h"><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${r.aciklama}</td><td class="mu hide-mob">${r.kategori}</td><td class="mu hide-mob">${UYE_ADI[r.uye]||r.uye}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${kaynakAdi(r.kaynak)}</span></td><td class="amt">${formatPara(r.tutar)}</td><td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`).join('')}</tbody></table>`;
   }catch(e){document.getElementById('islemT').innerHTML=`<div class="loader" style="color:var(--red)">Hata: ${e.message}</div>`;}
 }
 function islemFiltreTemizle(){['filAra','filMin','filMax'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['filU','filK','filKy'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});islemleriYukle();}
-function islemDuzenleBaslat(id){
-  _islemEditIds.add(id);
-  islemleriYukle();
-}
-function islemDuzenleIptal(id){
-  if(id){ _islemEditIds.delete(id); }
-  else{ _islemEditIds.clear(); }
-  islemleriYukle();
-}
-function islemDuzenleTus(ev,id){
-  if(!ev || !id) return;
-  if(ev.key === 'Escape'){
-    ev.preventDefault();
-    islemDuzenleIptal(id);
-  }else if(ev.key === 'Enter'){
-    ev.preventDefault();
-    islemDuzenleKaydet(id);
-  }
-}
-async function islemDuzenleKaydet(id){
-  try{
-    const tarih = (document.getElementById(`duz_tarih_${id}`)?.value || '').trim();
-    const aciklama = (document.getElementById(`duz_aciklama_${id}`)?.value || '').trim();
-    const kategori = (document.getElementById(`duz_kategori_${id}`)?.value || '').trim();
-    const uye = (document.getElementById(`duz_uye_${id}`)?.value || '').trim();
-    const kaynak = (document.getElementById(`duz_kaynak_${id}`)?.value || '').trim();
-    const tutar = parseFloat((document.getElementById(`duz_tutar_${id}`)?.value || '').replace(',', '.'));
-    if(!tarih || !aciklama || !kategori || !uye || !kaynak || !isFinite(tutar) || tutar<=0){
-      toast('Tarih, açıklama, kategori, üye, kaynak ve tutar zorunlu', true);
-      return;
-    }
-    await sbPatch('transactions',`id=eq.${id}`,{
-      tarih,
-      aciklama,
-      tutar,
-      kategori,
-      uye,
-      kaynak
-    });
-    _islemEditIds.delete(id);
-    toast('İşlem güncellendi');
-    await islemleriYukle();
-    dashboardYukle();
-  }catch(e){ toast('Hata: '+e.message,true); }
-}
 async function islemSil(id){if(!confirm('Silmek istediğinize emin misiniz?'))return;try{await sbDelete('transactions',`id=eq.${id}`);toast('İşlem silindi');islemleriYukle();}catch(e){toast('Hata: '+e.message,true);}}
 
 // EKLE
@@ -1235,9 +812,9 @@ async function taksitleriYukle(){
             <div style="text-align:right;flex-shrink:0">
               <div style="font-weight:500">${formatPara(t.tutar)}<span style="font-size:11px;font-weight:400;color:var(--muted)">/ay</span></div>
               <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${t.kalan_taksit} kaldı · ${formatPara(kt)}</div>
-              ${(()=>{const ekstre=['garanti','enpara','yapı_kredi'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;const kredi=!!t.loan_id;if(kredi)return`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`;if(ekstre)return`<div style="font-size:10px;color:var(--amber);margin-bottom:4px">📄 Ekstre ile izleniyor</div>`;return '';})()}
+              ${(()=>{const ekstre=['garanti','enpara','yapı_kredi','qnb'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;const kredi=!!t.loan_id;if(kredi)return`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`;if(ekstre)return`<div style="font-size:10px;color:var(--amber);margin-bottom:4px">📄 Ekstre ile izleniyor</div>`;return '';})()}
               <div style="display:flex;gap:4px;justify-content:flex-end">
-                ${(()=>{const ekstre=['garanti','enpara','yapı_kredi'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;return ekstre?`<button class="btn" style="padding:3px 8px;font-size:11px;opacity:.45;cursor:default" disabled title="Ekstre yüklendiğinde otomatik güncellenir">Ekstre</button>`:`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`;})()}
+                ${(()=>{const ekstre=['garanti','enpara','yapı_kredi','qnb'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;return ekstre?`<button class="btn" style="padding:3px 8px;font-size:11px;opacity:.45;cursor:default" disabled title="Ekstre yüklendiğinde otomatik güncellenir">Ekstre</button>`:`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`;})()}
                 <button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="taksitSil('${t.id}')">Sil</button>
               </div>
             </div>
@@ -1284,21 +861,7 @@ async function taksitOdendi(id,odemeYontemi){
       uye:t.uye,
       notlar:`Taksit ödemesi`
     });
-    const patch={kalan_taksit:yk,durum:yk<=0?'odendi':'bekliyor'};
-    if(yk>0&&t.loan_id){
-      const sonraki=new Date((t.son_odeme_tarihi||'')+'T12:00:00');
-      if(!isNaN(sonraki.getTime())){
-        sonraki.setMonth(sonraki.getMonth()+1);
-        patch.son_odeme_tarihi=sonraki.toISOString().split('T')[0];
-        patch.taksit_no=(Number(t.taksit_no)||0)+1;
-      }
-    }
-    await sbPatch('installments',`id=eq.${id}`,patch);
-    if(yk>0&&t.loan_id){
-      try{
-        await sbPatch('loans',`id=eq.${t.loan_id}`,{kalan_taksit:yk});
-      }catch(_){/* senkron isteğe bağlı */}
-    }
+    await sbPatch('installments',`id=eq.${id}`,{kalan_taksit:yk,durum:yk<=0?'odendi':'bekliyor'});
     toast(yk<=0?'Taksit tamamlandı!':`${yk} taksit kaldı`);
     taksitleriYukle();
   }catch(e){toast('Hata: '+e.message,true);}
@@ -1337,11 +900,11 @@ function krediOnizle(){
     for(let i=0;i<toplam;i++){const t=new Date(ilkOdeme);t.setMonth(t.getMonth()+i);if(bugun>=t)gecenAy++;else break;}
     const kalan=Math.max(0,toplam-gecenAy);
     if(gecenAy>0&&gecenAy<toplam){
-      uyariEl.textContent=`ℹ ${gecenAy} ay geçmiş (ödenmiş), ${kalan} ay kalan — taksitler listesinde tek satır`;
+      uyariEl.textContent=`ℹ ${gecenAy} taksit geçmiş (ödenmiş), ${kalan} taksit oluşturulacak`;
     } else if(gecenAy>=toplam){
       uyariEl.textContent='⚠ Bu kredi tamamen ödenmiş görünüyor';
     } else {
-      uyariEl.textContent=`${toplam} aylık vade — taksitler listesinde tek satır`;
+      uyariEl.textContent=`${toplam} taksit oluşturulacak`;
     }
   } else { el.style.display='none'; }
 }
@@ -1439,24 +1002,31 @@ async function krediEkle(){
     const kreRes=await sbPost('loans',body);
     const loanId=kreRes?.[0]?.id;
     
-    // Tek installments satırı: aylık tutar + kalan_taksit; son_odeme bir sonraki ödeme tarihi
+    // Gelecek taksitleri (ödenmemiş) installments tablosuna otomatik ekle
     if(loanId&&kalanTaksit>0){
-      const sonrakiOdeme=new Date(ilkOdeme+'T12:00:00');
-      sonrakiOdeme.setMonth(sonrakiOdeme.getMonth()+odenmisTaksit);
-      const siradakiNo=odenmisTaksit+1;
-      await sbPost('installments',{
-        aciklama:ad,
-        tutar:aylikTaksit,
-        kaynak:banka,
-        uye:(_uyeler[0]?.slug||'harun'),
-        toplam_taksit:toplamTaksit,
-        kalan_taksit:kalanTaksit,
-        taksit_no:siradakiNo,
-        loan_id:loanId,
-        son_odeme_tarihi:sonrakiOdeme.toISOString().split('T')[0],
-        durum:'bekliyor'
-      });
-      toast('Kredi eklendi · taksitlerde tek satır');
+      const taksitler=[];
+      for(let i=0;i<kalanTaksit;i++){
+        const odTarih=new Date(ilkOdeme);
+        odTarih.setMonth(odTarih.getMonth()+odenmisTaksit+i);
+        const taksitNo=odenmisTaksit+i+1;
+        taksitler.push({
+          aciklama:`${ad} — ${taksitNo}/${toplamTaksit}. taksit`,
+          tutar:aylikTaksit,
+          kaynak:banka,
+          uye:(_uyeler[0]?.slug||'harun'),
+          toplam_taksit:toplamTaksit,
+          kalan_taksit:kalanTaksit-i,
+          taksit_no:taksitNo,
+          loan_id:loanId,
+          son_odeme_tarihi:odTarih.toISOString().split('T')[0],
+          durum:'bekliyor'
+        });
+      }
+      // Toplu ekle (batch)
+      for(const t of taksitler){
+        await sbPost('installments',t);
+      }
+      toast(`Kredi eklendi · ${kalanTaksit} taksit oluşturuldu`);
     } else {
       toast('Kredi eklendi');
     }
@@ -1470,14 +1040,13 @@ async function krediEkle(){
 }
 
 async function krediOdendi(id){
-  // Loan'a bağlı bekleyen taksit: tek satırda kalan_taksit; eski veride satır başına 1 ay
+  // Loan'a bağlı installments'tan kalan_taksit hesapla
   try{
     const loans=await sbGet('loans',`id=eq.${id}`);
     if(!loans.length)return;
+    const l=loans[0];
     const inst=await sbGet('installments',`loan_id=eq.${id}&durum=eq.bekliyor`);
-    let yk=0;
-    if(inst.length===1)yk=Number(inst[0].kalan_taksit)||0;
-    else if(inst.length>1)yk=inst.length;
+    const yk=inst.length;
     await sbPatch('loans',`id=eq.${id}`,{kalan_taksit:yk,durum:yk<=0?'kapandi':'aktif'});
     toast(yk<=0?'Kredi kapandı!':`${yk} taksit kaldı`);
     kredileriYukle();
@@ -1486,14 +1055,7 @@ async function krediOdendi(id){
 
 async function krediSil(id){
   if(!confirm('Bu krediyi silmek istediğinize emin misiniz?'))return;
-  try{
-    const bagli=await sbGet('installments',`loan_id=eq.${id}&select=id`);
-    for(const row of bagli){ await sbDelete('installments',`id=eq.${row.id}`); }
-    await sbDelete('loans',`id=eq.${id}`);
-    toast('Kredi silindi');
-    kredileriYukle();
-    taksitleriYukle();
-  }catch(e){toast('Hata: '+e.message,true);}
+  try{await sbDelete('loans',`id=eq.${id}`);toast('Kredi silindi');kredileriYukle();}catch(e){toast('Hata: '+e.message,true);}
 }
 
 // BÜTÇE
@@ -1509,141 +1071,12 @@ async function butceYukle(){
 }
 async function butceKaydet(){
   const uyeler=['hepsi',..._uyeler.map(u=>u.slug)];
-  try{
-    let kaydedilen = 0;
-    for(const u of uyeler){
-      const val = document.getElementById('b_'+u)?.value;
-      const hedef = parseFloat(val);
-      if(!val || !isFinite(hedef) || hedef<=0) continue;
-      const body = { ay: secilenAy, uye: u, kategori: 'genel', hedef, updated_at: new Date().toISOString(), owner_id: authUserId() };
-      let ok = false;
-      let sonHata = null;
-      for(const cols of ['owner_id,ay,uye,kategori','ay,uye,kategori']){
-        try{
-          await sbApiFetch(`${SB_URL}/rest/v1/budgets?on_conflict=${encodeURIComponent(cols)}`, {
-            method:'POST',
-            headers:{ Prefer:'return=representation,resolution=merge-duplicates' },
-            body:JSON.stringify(body)
-          });
-          ok = true;
-          break;
-        }catch(e){
-          sonHata = e;
-        }
-      }
-      if(!ok){
-        const m = await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);
-        if(m.length){
-          await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef,updated_at:new Date().toISOString()});
-          ok = true;
-        }else{
-          try{
-            await sbPost('budgets',{ay:secilenAy,uye:u,kategori:'genel',hedef,updated_at:new Date().toISOString()});
-            ok = true;
-          }catch(e2){
-            sonHata = e2;
-          }
-        }
-      }
-      if(!ok) throw sonHata || new Error('Bütçe kaydı yapılamadı');
-      kaydedilen++;
-    }
-    toast(kaydedilen>0?'Bütçe kaydedildi':'Kaydedilecek hedef yok');
-  }catch(e){
-    const m = String(e.message||'');
-    if(m.includes('budgets_ay_uye_kategori_key') || m.includes('23505')){
-      toast('Bütçe tablosunda eski tekillik var (budgets_ay_uye_kategori_key). Supabase SQL Editor’da `supabase-fix-budgets-unique.sql` dosyasını çalıştır.', true);
-    }else{
-      toast('Hata: '+m,true);
-    }
-  }
+  try{for(const u of uyeler){const val=document.getElementById('b_'+u)?.value;if(!val||parseFloat(val)<=0)continue;const m=await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);if(m.length){await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef:parseFloat(val),updated_at:new Date().toISOString()});}else{await sbPost('budgets',{ay:secilenAy,uye:u,kategori:'genel',hedef:parseFloat(val)});}}toast('Bütçe kaydedildi');}catch(e){toast('Hata: '+e.message,true);}
 }
 
 // AYARLAR
-async function sifreDegistir(){
-  const mevcut = document.getElementById('sifreMevcut')?.value || '';
-  const yeni = document.getElementById('sifreYeni')?.value || '';
-  const tekrar = document.getElementById('sifreTekrar')?.value || '';
-  const durum = document.getElementById('sifreMesaj');
-  if(durum){ durum.textContent = ''; durum.style.color = 'var(--muted)'; }
-  if(mevcut.length < 6){ toast('Mevcut şifreyi girin', true); return; }
-  if(yeni.length < 6){ toast('Yeni şifre en az 6 karakter olmalı', true); return; }
-  if(yeni !== tekrar){ toast('Şifreler eşleşmiyor', true); return; }
-  if(!authToken()){ toast('Oturum bulunamadı', true); return; }
-  const eposta = localStorage.getItem('ac_user_email') || authJwtPayload(authToken())?.email || '';
-  if(!eposta){ toast('E-posta bilgisi bulunamadı. Çıkış yapıp tekrar giriş yapın.', true); return; }
-  try{
-    // Re-auth: Supabase secure password change ayarında zorunlu olabilir.
-    const loginData = await authIstek('token?grant_type=password', { email: eposta, password: mevcut });
-    authOturumKaydet(loginData);
-  }catch(e){
-    const m = String(e.message||'');
-    if(durum){ durum.textContent = 'Mevcut şifre doğrulanamadı.'; durum.style.color = 'var(--red)'; }
-    toast('Hata: ' + m, true);
-    return;
-  }
-  const istek = (method) => fetch(`${SB_URL}/auth/v1/user`, {
-    method,
-    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + authToken(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: yeni })
-  });
-  let r = await istek('PATCH');
-  let raw = await r.text();
-  if(!r.ok && (r.status===405 || /405|method not allowed/i.test(String(raw||'')))){
-    r = await istek('PUT');
-    raw = await r.text();
-  }
-  if(!r.ok && sbJwtHatasiMetin(raw) && await authOturumuYenile()){
-    r = await istek('PATCH');
-    raw = await r.text();
-    if(!r.ok && (r.status===405 || /405|method not allowed/i.test(String(raw||'')))){
-      r = await istek('PUT');
-      raw = await r.text();
-    }
-  }
-  let data = {};
-  try{ data = raw ? JSON.parse(raw) : {}; }catch(_){}
-  if(!r.ok){
-    const errTxt = data.msg || data.message || data.error_description || raw || '';
-    const guvenli = /reauthentication|reauth|nonce|otp/i.test(String(errTxt));
-    const temel = guvenli
-      ? 'Güvenlik nedeniyle bu oturumda şifre değişimi engellendi.'
-      : (errTxt || `Güncellenemedi (HTTP ${r.status})`);
-    let mesaj = temel;
-    if(!guvenli){
-      try{
-        const redirRaw = authConfirmRedirectUrl();
-        const redir = encodeURIComponent(redirRaw);
-        await authIstek(`recover?redirect_to=${redir}`, { email: eposta, redirect_to: redirRaw });
-        mesaj = `${temel} Şifre sıfırlama bağlantısı e-posta adresine gönderildi.`;
-      }catch(_){}
-    }else{
-      mesaj += ' "Şifremi unuttum" ile mailden yenilemeyi dene.';
-    }
-    if(durum){ durum.textContent = mesaj; durum.style.color = 'var(--red)'; }
-    toast('Hata: ' + mesaj, true);
-    return;
-  }
-  if(data.access_token){
-    authOturumKaydet({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token || localStorage.getItem('ac_refresh_token') || '',
-      user: data.user || { id: data.id || authUserId() }
-    });
-  }
-  document.getElementById('sifreMevcut').value = '';
-  document.getElementById('sifreYeni').value = '';
-  document.getElementById('sifreTekrar').value = '';
-  if(durum){ durum.textContent = 'Şifre güncellendi.'; durum.style.color = 'var(--green)'; }
-  toast('Şifre güncellendi');
-}
-
 async function ayarlarYukle(){
   document.getElementById('katL').innerHTML='<div class="loader">Yükleniyor...</div>';
-  const sm = document.getElementById('sifreMesaj');
-  if(sm){ sm.textContent = ''; sm.style.color = 'var(--muted)'; }
-  const es = document.getElementById('sifreMevcut');
-  if(es) es.value = '';
   try{
     await kategorileriYukle();
     katListesiGoster();
@@ -1688,23 +1121,12 @@ async function bildirimKontrol() {
 
     // Bu hafta içinde son_odeme_tarihi olan bekleyen taksitler
     const data = await sbGet('installments',
-      `durum=eq.bekliyor&son_odeme_tarihi=lte.${limitStr}&order=son_odeme_tarihi.asc&select=aciklama,tutar,son_odeme_tarihi,uye,kaynak,toplam_taksit,loan_id`
+      `durum=eq.bekliyor&son_odeme_tarihi=lte.${limitStr}&order=son_odeme_tarihi.asc&select=aciklama,tutar,son_odeme_tarihi,uye`
     );
     if (!data.length) return;
 
-    // Ekstre ile izlenen kart taksitleri (garanti/enpara/yapi_kredi, loan_id yok, taksitli)
-    // aylik ekstre yuklendikce otomatik ilerler; "gecikmis" banner'inda gosterme.
-    const bildirimlik = data.filter(t => {
-      const ekstreTakip =
-        ['garanti', 'enpara', 'yapı_kredi'].includes(t.kaynak) &&
-        Number(t.toplam_taksit || 1) > 1 &&
-        !t.loan_id;
-      return !ekstreTakip;
-    });
-    if (!bildirimlik.length) return;
-
-    const urgent   = bildirimlik.filter(t => t.son_odeme_tarihi <= bugunStr);
-    const upcoming = bildirimlik.filter(t => t.son_odeme_tarihi >  bugunStr);
+    const urgent   = data.filter(t => t.son_odeme_tarihi <= bugunStr);
+    const upcoming = data.filter(t => t.son_odeme_tarihi >  bugunStr);
 
     const banner = document.getElementById('bildirimBanner');
     const items  = [];
@@ -1836,17 +1258,15 @@ async function uyeListesiGoster() {
   const el = document.getElementById('uyeL');
   if (!el) return;
   if (!_uyeler.length) { el.innerHTML='<div class="loader">Üye yok</div>'; return; }
-  el.innerHTML = `<table class="member-table">
+  el.innerHTML = `<table>
     <thead><tr><th>#</th><th>Üye</th><th>Renk</th><th></th></tr></thead>
     <tbody>${_uyeler.map((u,i) => `<tr class="tr-h">
       <td class="mu">${u.sira}</td>
-      <td>
-        <span class="member-name">
-          <span class="member-dot" style="background:${u.renk}"></span>
+      <td style="display:flex;align-items:center;gap:8px;padding:9px 8px">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${u.renk};flex-shrink:0"></span>
         ${u.ad}
-        </span>
       </td>
-      <td><input class="member-color" type="color" value="${u.renk}" onchange="uyeRenkGuncelle('${u.id}',this.value,'${u.slug}')"></td>
+      <td><input type="color" value="${u.renk}" onchange="uyeRenkGuncelle('${u.id}',this.value,'${u.slug}')" style="width:32px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:1px"></td>
       <td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="uyeSil('${u.id}','${u.ad}')">Sil</button></td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -1856,70 +1276,18 @@ async function uyeEkle() {
   const ad = document.getElementById('yUyeAd').value.trim();
   const renk = document.getElementById('yUyeRenk').value;
   if (!ad) { toast('Üye adı girin', true); return; }
-  const slug = slugYap(ad);
-  if (!slug) { toast('Geçerli bir ad girin', true); return; }
+  const slug = ad.toLowerCase()
+    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+    .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+    .replace(/[^a-z0-9]/g,'_');
   const sira = _uyeler.length + 1;
-  const body = { slug, ad, renk, sira, aktif: true, owner_id: authUserId() };
-  const upsertPref = { Prefer: 'return=representation,resolution=merge-duplicates' };
-  let ok = false;
-  let sonHata = null;
-  let rpcYok = false;
   try {
-    await sbApiFetch(`${SB_URL}/rest/v1/rpc/ac_member_upsert`, {
-      method: 'POST',
-      body: JSON.stringify({ p_slug: slug, p_ad: ad, p_renk: renk, p_sira: sira })
-    });
-    ok = true;
-  } catch (rpcErr) {
-    const rm = String(rpcErr.message || '');
-    rpcYok = /does not exist|42883|PGRST202|404|Could not find the function/i.test(rm);
-    if (!rpcYok) {
-      sonHata = rpcErr;
-    }
-  }
-  if (!ok) {
-    for (const cols of ['owner_id,slug', 'slug']) {
-      try {
-        await sbApiFetch(`${SB_URL}/rest/v1/members?on_conflict=${encodeURIComponent(cols)}`, {
-          method: 'POST',
-          headers: upsertPref,
-          body: JSON.stringify(body)
-        });
-        ok = true;
-        break;
-      } catch (e) {
-        sonHata = e;
-      }
-    }
-  }
-  if (!ok) {
-    try {
-      await sbPost('members', { slug, ad, renk, sira, aktif: true, owner_id: authUserId() });
-      ok = true;
-      sonHata = null;
-    } catch (e2) {
-      sonHata = e2;
-    }
-  }
-  if (!ok) {
-    const m = String(sonHata?.message || '');
-    if (m.includes('23505') || m.includes('members_slug')) {
-      if (rpcYok) {
-        toast('Üye eklemek için Supabase → SQL Editor’da `supabase-fix-members-upsert-rls.sql` dosyasını aynı projede bir kez çalıştırın (REST şu an `ac_member_upsert` fonksiyonunu bulamıyor).', true);
-      } else if (m.includes('members_slug_key')) {
-        toast('Üye tablosunda `slug` tüm hesaplar için tekil tanımlı (members_slug_key). SQL dosyasının en üstündeki 0) bölümünü çalıştırın: tekillik (owner_id, slug) olmalı.', true);
-      } else {
-        toast('Aynı isimde kayıt var; güncelleme engellendi. SQL dosyasını tekrar çalıştırın veya Table Editor’da aynı slug satırını düzeltin. Teknik: ' + m.slice(0, 220), true);
-      }
-    } else {
-      toast('Hata: ' + m, true);
-    }
-    return;
-  }
-  toast('Üye kaydedildi: ' + ad);
-  document.getElementById('yUyeAd').value = '';
-  await uyeleriYukle();
-  uyeListesiGoster();
+    await sbPost('members', {slug, ad, renk, sira, aktif: true});
+    toast('Üye eklendi: ' + ad);
+    document.getElementById('yUyeAd').value = '';
+    await uyeleriYukle();
+    uyeListesiGoster();
+  } catch(e) { toast('Hata: ' + e.message, true); }
 }
 
 async function uyeRenkGuncelle(id, renk, slug) {
@@ -1941,161 +1309,12 @@ async function uyeSil(id, ad) {
   } catch(e) { toast('Hata: ' + e.message, true); }
 }
 
-async function ilkKurulumGerekliMi(){
-  try{
-    const [members, cats] = await Promise.all([
-      sbGet('members','limit=1'),
-      sbGet('categories','limit=1')
-    ]);
-    return !members.length || !cats.length;
-  }catch(e){
-    throw new Error('Kurulum kontrolu basarisiz: ' + e.message);
-  }
-}
-async function ilkKurulumuTamamla(){
-  const m1 = (document.getElementById('setupMember1')?.value || '').trim();
-  const m2 = (document.getElementById('setupMember2')?.value || '').trim();
-  if(!m1){ setupMesaj('En az bir uye adi gerekli.', true); return; }
-  try{
-    setupMesaj('Kurulum yapiliyor...');
-    const defaults = [
-      {ad:'market',renk:'#378ADD',sira:1},
-      {ad:'fatura',renk:'#1D9E75',sira:2},
-      {ad:'restoran',renk:'#EF9F27',sira:3},
-      {ad:'ulasim',renk:'#D85A30',sira:4},
-      {ad:'saglik',renk:'#7F77DD',sira:5},
-      {ad:'diger',renk:'#888780',sira:6}
-    ];
-    let mevcutKat = [];
-    let mevcutUye = [];
-    try{ mevcutKat = await sbGet('categories','select=ad'); }catch(_){}
-    try{ mevcutUye = await sbGet('members','select=slug'); }catch(_){}
-    const varOlanAd = new Set((mevcutKat||[]).map(r=>r.ad));
-    const varOlanSlug = new Set((mevcutUye||[]).map(r=>r.slug));
-    for (const c of defaults){
-      if(varOlanAd.has(c.ad)) continue;
-      try{ await sbPost('categories', c); varOlanAd.add(c.ad); }
-      catch(err){
-        const msg = (err && err.message) ? String(err.message) : String(err);
-        if(msg.includes('23505')||msg.includes('duplicate')) continue;
-        throw err;
-      }
-    }
-    let katSay = 0;
-    try{ katSay = (await sbGet('categories','select=id')).length; }catch(_){}
-    if(katSay === 0){
-      setupMesaj('Kategoriler eklenemedi: veritabaninda ad tum kullanicilar icin tekil (categories_ad_key). Supabase SQL Editor\'da supabase-fix-categories-unique.sql calistir.', true);
-      return;
-    }
-    const uyeler = [m1, m2].filter(Boolean);
-    for (let i = 0; i < uyeler.length; i++){
-      const ad = uyeler[i];
-      const slug = slugYap(ad);
-      if(!slug){ continue; }
-      if(varOlanSlug.has(slug)) continue;
-      try{
-        await sbPost('members', { slug, ad, renk: i===0 ? '#378ADD' : '#1D9E75', sira: i+1, aktif:true });
-        varOlanSlug.add(slug);
-      }catch(err){
-        const msg = (err && err.message) ? String(err.message) : String(err);
-        if(msg.includes('23505')||msg.includes('duplicate')) continue;
-        throw err;
-      }
-    }
-    document.getElementById('setupGate').style.display='none';
-    await uygulamaBaslat(true);
-  }catch(e){
-    setupMesaj(e.message, true);
-  }
-}
-async function uygulamaBaslat(skipSetupCheck=false){
-  temaBaslat();
-  document.getElementById('fT').value=bugunTarih();
-  document.getElementById('tD').value=bugunTarih();
-  aySeciciDoldur();
-  if(!skipSetupCheck){
-    const setup = await ilkKurulumGerekliMi();
-    if(setup){
-      document.getElementById('authGate').style.display='none';
-      document.getElementById('setupGate').style.display='flex';
-      authGovdeScrollKilidi();
-      return;
-    }
-  }
-  document.getElementById('authGate').style.display='none';
-  await uyeleriYukle();
-  await kategorileriYukle();
-  dashboardYukle();
-  bildirimKontrol();
-  pushDurumGoster();
-  authGovdeScrollKilidi();
-}
-async function authBaslat(){
-  if(!appModeAktifMi()){
-    location.replace('landing.html');
-    return;
-  }
-  const rawHash = (window.location.hash || '').replace(/^#/, '');
-  if(rawHash){
-    const pe = new URLSearchParams(rawHash);
-    if(pe.get('error')){
-      const msg = pe.get('error_description') || pe.get('error') || 'Bağlantı geçersiz';
-      try{
-        authMesaj(decodeURIComponent(String(msg).replace(/\+/g,' ')), true);
-      }catch(_){ authMesaj(String(msg), true); }
-      authHashTemizle();
-      document.getElementById('authGate').style.display='flex';
-      authTabUrlUygula();
-      authGovdeScrollKilidi();
-      return;
-    }
-  }
-  if(authHashCallbackIsle()){
-    try{
-      await uygulamaBaslat();
-    }catch(e){
-      localStorage.removeItem('ac_access_token');
-      localStorage.removeItem('ac_refresh_token');
-      localStorage.removeItem('ac_user_id');
-      authMesaj(e.message, true);
-      document.getElementById('authGate').style.display='flex';
-    }
-    authGovdeScrollKilidi();
-    return;
-  }
-  if(authToken() && localStorage.getItem('ac_refresh_token') && !authJwtGecerli(120)){
-    await authOturumuYenile();
-  }
-  const token = authToken();
-  if(!token){
-    document.getElementById('authGate').style.display='flex';
-    authTabUrlUygula();
-    authGovdeScrollKilidi();
-    return;
-  }
-  try{
-    await uygulamaBaslat();
-  }catch(e){
-    const msg = String(e.message || '');
-    if(sbJwtHatasiMetin(msg) && await authOturumuYenile()){
-      try{
-        await uygulamaBaslat();
-        authGovdeScrollKilidi();
-        return;
-      }catch(_){}
-    }
-    localStorage.removeItem('ac_access_token');
-    localStorage.removeItem('ac_refresh_token');
-    localStorage.removeItem('ac_user_id');
-    authMesaj(sbJwtHatasiMetin(msg) ? 'Oturum süresi doldu. Lütfen tekrar giriş yap.' : e.message, true);
-    document.getElementById('authGate').style.display='flex';
-    authTabUrlUygula();
-  }
-  authGovdeScrollKilidi();
-}
-
 // BAŞLANGIÇ
-authBaslat();
+temaBaslat();
+document.getElementById('fT').value=bugunTarih();
+document.getElementById('tD').value=bugunTarih();
+aySeciciDoldur();
+uyeleriYukle().then(()=>kategorileriYukle()).then(()=>{dashboardYukle();bildirimKontrol();pushDurumGoster();});
 </script>
 </body>
 </html>
