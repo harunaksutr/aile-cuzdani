@@ -651,10 +651,44 @@ function authSekme(mod) {
   document.getElementById('authOk').style.display  = 'none';
 }
 
+/** Supabase Auth hata kodu / İngilizce mesaj → Türkçe */
+function authHataMetni(e, girisMi) {
+  const raw = (e && e.message) ? String(e.message) : String(e);
+  const low = raw.toLowerCase();
+  const code = e && e.code ? String(e.code) : '';
+  if (code === 'user_already_exists' || low.includes('already been registered') || low.includes('already registered') || low.includes('user already exists')) {
+    return 'Bu e-posta ile zaten hesap var. «Giriş Yap» sekmesinden giriş yapın veya şifre sıfırlamayı kullanın.';
+  }
+  if (code === 'email_address_invalid' || low.includes('invalid email')) {
+    return 'Geçerli bir e-posta adresi girin.';
+  }
+  if (low.includes('password') && (low.includes('weak') || low.includes('least') || low.includes('short') || low.includes('minimum'))) {
+    return 'Şifre Supabase kurallarına uymuyor. Daha uzun veya daha karmaşık bir şifre deneyin (ör. harf+rakam).';
+  }
+  if (code === 'signup_disabled' || low.includes('signup not allowed') || low.includes('signups not allowed')) {
+    return 'Yeni kayıtlar şu an kapalı. Yönetici ile iletişime geçin.';
+  }
+  if (girisMi && (code === 'invalid_credentials' || code === 'invalid_grant' || low.includes('invalid login'))) {
+    return 'E-posta veya şifre hatalı.';
+  }
+  if (low.includes('email not confirmed')) {
+    return 'E-posta henüz doğrulanmamış. Gelen kutunuzu kontrol edin veya Supabase’te doğrulamayı tamamlayın.';
+  }
+  if (low.includes('too many requests') || low.includes('rate limit')) {
+    return 'Çok fazla deneme. Bir süre sonra tekrar deneyin.';
+  }
+  return raw;
+}
+
 async function authKayitOl() {
   const errEl = document.getElementById('authErr');
   const okEl  = document.getElementById('authOk');
   errEl.style.display = 'none'; okEl.style.display = 'none';
+  if (!sbAuth) {
+    errEl.textContent = 'Oturum kütüphanesi henüz yüklenmedi. Sayfayı yenileyin.';
+    errEl.style.display = 'block';
+    return;
+  }
   const email = document.getElementById('authSignupEmail').value.trim();
   const pass  = document.getElementById('authSignupPass').value;
   if (!email || !pass) { errEl.textContent = 'E-posta ve şifre gereklidir.'; errEl.style.display = 'block'; return; }
@@ -671,10 +705,16 @@ async function authKayitOl() {
       await devamBootstrap();
       return;
     }
-    okEl.textContent = 'Kayıt başarılı! E-postanızı doğrulayın, ardından giriş yapabilirsiniz.';
+    // Doğrulama açıksa: kullanıcı oluşur, session gelmez
+    if (data?.user && !data?.session) {
+      okEl.textContent = 'Hesap oluşturuldu. E-postanızdaki doğrulama bağlantısına tıklayın; ardından «Giriş Yap» ile giriş yapın.';
+      okEl.style.display = 'block';
+      return;
+    }
+    okEl.textContent = 'Kayıt alındı. Giriş yapmayı deneyin veya e-posta kutunuzu kontrol edin.';
     okEl.style.display = 'block';
   } catch (e) {
-    errEl.textContent = e?.message || String(e);
+    errEl.textContent = authHataMetni(e, false);
     errEl.style.display = 'block';
   }
 }
@@ -701,7 +741,7 @@ async function authEmailSifre() {
     document.getElementById('authGate').style.display = 'none';
     await devamBootstrap();
   } catch (e) {
-    errEl.textContent = e?.message || String(e);
+    errEl.textContent = authHataMetni(e, true);
     errEl.style.display = 'block';
   }
 }
@@ -722,8 +762,7 @@ async function authGoogle() {
     if (error) throw error;
     // Redirect gerçekleşecek — sayfa yeniden yüklenecek
   } catch (e) {
-    const msg = e?.message || String(e);
-    errEl.textContent = msg;
+    errEl.textContent = authHataMetni(e, false);
     errEl.style.display = 'block';
   }
 }
