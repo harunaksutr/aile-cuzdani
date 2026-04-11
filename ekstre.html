@@ -44,15 +44,13 @@ td.mu{color:var(--muted)}
 .alert.err{background:rgba(226,75,74,.1);color:var(--red);border:.5px solid rgba(226,75,74,.3)}
 .sel-all{font-size:12px;color:var(--blue);cursor:pointer;text-decoration:underline}
 .cat-sel{font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text)}
-.uye-hucre{display:flex;align-items:center;gap:6px}
-.uye-asagi{padding:3px 8px;font-size:11px;line-height:1}
 .back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
 .back-btn:hover{color:var(--text)}
 </style>
 </head>
 <body>
 
-<a class="back-btn" href="index.html?app=1">← Dashboard'a dön</a>
+<a class="back-btn" href="index.html">← Dashboard'a dön</a>
 <h2>Garanti BBVA Ekstre Yükle</h2>
 
 <div class="card" id="uploadCard">
@@ -61,6 +59,7 @@ td.mu{color:var(--muted)}
     <button class="btn" id="bBtn-garanti" onclick="bankaSec('garanti')" style="border-color:var(--blue);color:var(--blue)">Garanti BBVA</button>
     <button class="btn" id="bBtn-enpara"  onclick="bankaSec('enpara')">Enpara</button>
     <button class="btn" id="bBtn-yapı_kredi" onclick="bankaSec('yapı_kredi')">Yapı Kredi</button>
+    <button class="btn" id="bBtn-qnb"       onclick="bankaSec('qnb')">QNB Finansbank</button>
   </div>
   <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
     <span class="drop-icon">📄</span>
@@ -80,7 +79,6 @@ td.mu{color:var(--muted)}
       <strong style="font-size:14px">Bulunan işlemler</strong>
       <span class="sel-all" style="margin-left:12px" onclick="tumunuSec(true)">Tümünü seç</span>
       <span class="sel-all" style="margin-left:8px" onclick="tumunuSec(false)">Temizle</span>
-      <span style="font-size:12px;color:var(--muted);margin-left:12px">Üye sütununda `↓` ile aşağıya uygula</span>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="sifirla()">Yeni PDF</button>
@@ -110,31 +108,19 @@ td.mu{color:var(--muted)}
 <script>
 const SB_URL = 'https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
-function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
-function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
-function apiHeaders(){
-  const token = authToken() || SB_KEY;
-  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
-}
-function ownerFilter(table,p=''){
-  if(!OWNER_TABLES.has(table)) return p;
-  const own = `owner_id=eq.${encodeURIComponent(authUserId())}`;
-  return p ? `${p}&${own}` : own;
-}
-if(!authToken()){ location.href = 'index.html?app=1&auth=login'; }
+const HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let parseEdilenIslemler = [];
 let kategoriler = [];
-let uyeler = [];
 let seciliBanka = 'garanti';
 
 const BANKA_HINTS = {
   garanti:    'Garanti BBVA kredi kartı ekstresi (.pdf)',
   enpara:     'Enpara kredi kartı ekstresi (.pdf)',
-  yapı_kredi: 'Yapı Kredi kredi kartı ekstresi (.pdf)'
+  yapı_kredi: 'Yapı Kredi kredi kartı ekstresi (.pdf)',
+  qnb:        'QNB Finansbank kredi kartı ekstresi (.pdf)'
 };
 
 function bankaSec(banka) {
@@ -160,6 +146,13 @@ const KAT_MAP = [
   {keys:['restaurant','restoran','burger','pizza','kfc','mcdonald','starbucks','kahve','cafe','yemek','döner','pide'],kat:'restoran'},
   {keys:['eczane','hastane','klinik','doktor','sağlık','ilaç','optik'],kat:'sağlık'},
   {keys:['okul','dershane','kurs','kitap','kırtasiye','eğitim'],kat:'eğitim'},
+  {keys:['hepsiburada','trendyol','amazon','n11','gittigidiyor','boyner','lcw','lc waikiki','deichmann','mudo','atakonline','kaft'],kat:'alışveriş'},
+  {keys:['playstation','steam','apple.com','google play','netflix','spotify','iyzico','bitwarden'],kat:'dijital'},
+  {keys:['yemeksepeti','moka','getir yemek','migros','sakura','börekçi','cafe','ekmek','mamülle','fırın'],kat:'yeme-içme'},
+  {keys:['jolly','tatil','otel','uçak','turizm','seyahat'],kat:'seyahat'},
+  {keys:['universal','pet','veteriner','hayvan'],kat:'evcil hayvan'},
+  {keys:['saglik','sağlık','eczane','diş','dental','klinik','hastane'],kat:'sağlık'},
+  {keys:['qnb','finansbank'],kat:'banka'},
 ];
 
 function kategoriTahmin(aciklama) {
@@ -168,37 +161,6 @@ function kategoriTahmin(aciklama) {
     if (m.keys.some(k => lower.includes(k))) return m.kat;
   }
   return 'diğer';
-}
-
-// Ekstre: elle seçilen kategorileri hatırla (hesap bazlı)
-function ekstreKatLsKey(){ return 'ac_ekstre_kat_map_' + (authUserId() || 'local'); }
-function ekstreKatAnahtar(aciklama){
-  return String(aciklama || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 220);
-}
-function ekstreKatMapOku(){
-  try { return JSON.parse(localStorage.getItem(ekstreKatLsKey()) || '{}'); } catch (_) { return {}; }
-}
-function ekstreKatMapKaydet(aciklama, kategori){
-  const key = ekstreKatAnahtar(aciklama);
-  if (!key || !kategori) return;
-  const m = ekstreKatMapOku();
-  m[key] = kategori;
-  const keys = Object.keys(m);
-  if (keys.length > 400) {
-    for (let i = 0; i < keys.length - 400; i++) delete m[keys[i]];
-  }
-  localStorage.setItem(ekstreKatLsKey(), JSON.stringify(m));
-}
-function ekstreKatHatirlaUygula(aciklama, varsayilan){
-  const m = ekstreKatMapOku();
-  const mKey = ekstreKatAnahtar(aciklama);
-  if (m[mKey] && kategoriler.includes(m[mKey])) return m[mKey];
-  return varsayilan;
-}
-function ekstreKategoriDegisti(i, kat){
-  if (!parseEdilenIslemler[i]) return;
-  parseEdilenIslemler[i].kategori = kat;
-  ekstreKatMapKaydet(parseEdilenIslemler[i].aciklama, kat);
 }
 
 function log(msg) { document.getElementById('log').textContent = msg; }
@@ -215,15 +177,9 @@ async function pdfYukle(file) {
 
   // Kategorileri yükle
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/categories?${ownerFilter('categories','order=sira.asc')}`, {headers: apiHeaders()});
+    const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, {headers: HEADERS});
     kategoriler = (await r.json()).map(k => k.ad);
   } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
-
-  // Üyeleri yükle
-  try {
-    const ru = await fetch(`${SB_URL}/rest/v1/members?${ownerFilter('members','aktif=eq.true&order=sira.asc')}`, {headers: apiHeaders()});
-    uyeler = await ru.json();
-  } catch(e) { uyeler = [{slug:'harun',ad:'Harun'},{slug:'aslı',ad:'Aslı'},{slug:'zeynep',ad:'Zeynep'},{slug:'zehra',ad:'Zehra'}]; }
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -254,9 +210,11 @@ async function pdfYukle(file) {
       if (metinKisa.includes('garanti') || metinKisa.includes('bonus')) tespit = 'garanti';
       else if (metinKisa.includes('enpara')) tespit = 'enpara';
       else if (metinKisa.includes('yapı kredi') || metinKisa.includes('worldcard')) tespit = 'yapı_kredi';
+      else if (metinKisa.includes('qnb') || metinKisa.includes('qnbcard') || metinKisa.includes('finansbank')) tespit = 'qnb';
       bankaSec(tespit);
 
       if (tespit === 'enpara') parseEtEnpara(tumMetin);
+      else if (tespit === 'qnb') parseEtQnb(tumMetin);
       else parseEtGaranti(tumMetin);
       window._debugMetin = tumMetin;
     } catch(err) { log('Hata: ' + err.message); }
@@ -292,7 +250,7 @@ function parseEtGaranti(metin) {
     if (taksitMatch) { toplamTaksit=parseInt(taksitMatch[2]); taksitNo=parseInt(taksitMatch[3]); kalanTaksit=toplamTaksit-taksitNo+1; }
     let aciklama = kalan.replace(taksitRe,'').replace(tutarRe,'').replace(/\s+\d+\s*$/,'').replace(/\s{2,}/g,' ').trim();
     if (!aciklama || aciklama.length < 2) continue;
-    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:ekstreKatHatirlaUygula(aciklama,kategoriTahmin(aciklama)), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
+    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:'harun', secili:true });
   }
   sonucGoster(islemler);
 }
@@ -335,39 +293,20 @@ function parseEtEnpara(metin) {
     const tutar = parseFloat(tutarStr);
     if (isNaN(tutar) || tutar <= 0) continue;
 
-    // Taksit: DD/MM/YYYY ve benzeri tarih parçaları "12/03" gibi yanlış taksit sanılmasın
-    const kalanTaksitIcin = kalan
-      .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, ' ')
-      .replace(/\b\d{4}\/\d{1,2}\/\d{1,2}\b/g, ' ');
-    let taksitMatch = kalanTaksitIcin.match(taksitRe);
-    let toplamTaksit = 1, kalanTaksit = 1, taksitNo = 1;
+    // Taksit bilgisi
+    const taksitMatch = kalan.match(taksitRe);
+    let toplamTaksit=1, kalanTaksit=1, taksitNo=1;
     if (taksitMatch) {
-      const a = parseInt(taksitMatch[1], 10);
-      const b = parseInt(taksitMatch[2], 10);
-      const gecerli = a >= 1 && a <= b && b >= 2 && b <= 60;
-      const tarihAdayi = a > b && b <= 12 && a <= 31;
-      const ayGunAdayi = a >= 1 && a <= 12 && b >= 13 && b <= 31; // 03/15 gibi MM/DD
-      if (gecerli && !tarihAdayi && !ayGunAdayi) {
-        taksitNo = a;
-        toplamTaksit = b;
-        kalanTaksit = toplamTaksit - taksitNo + 1;
-      } else {
-        taksitMatch = null;
-      }
+      taksitNo     = parseInt(taksitMatch[1]);
+      toplamTaksit = parseInt(taksitMatch[2]);
+      kalanTaksit  = toplamTaksit - taksitNo + 1;
     }
 
-    // Açıklama temizle — geçerli taksitse x/y kaldır (aksi halde tarih parçası silinmesin)
+    // Açıklama temizle — parantez içleri, taksit, tutar kaldır
     let aciklama = kalan
       .replace(/\([^)]*\)/g, '')
-      .replace(tutarRe, '');
-    if (toplamTaksit > 1) aciklama = aciklama.replace(taksitRe, '');
-    aciklama = aciklama
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-    // Banka etiketleri (PDF'te işlem satırında kalabiliyor)
-    aciklama = aciklama
-      .replace(/\bgec[iı]km[iı][sş]\b[:\-]?\s*/gi, '')
+      .replace(tutarRe, '')
+      .replace(taksitRe, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
 
@@ -383,9 +322,9 @@ function parseEtEnpara(metin) {
       toplam_taksit: toplamTaksit,
       kalan_taksit:  kalanTaksit,
       taksit_no:     taksitNo,
-      kategori: ekstreKatHatirlaUygula(aciklama, kategoriTahmin(aciklama)),
+      kategori: kategoriTahmin(aciklama),
       kaynak: 'enpara',
-      uye: (uyeler[0]?.slug||'harun'),
+      uye: 'harun',
       secili: true
     });
   }
@@ -412,7 +351,7 @@ function sonucGoster(islemler) {
     <div class="stat-item"><div class="sl">Toplam tutar</div><div class="sv">${toplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div></div>
     <div class="stat-item"><div class="sl">Taksitli</div><div class="sv">${taksitli}</div></div>`;
 
-  document.getElementById('alertBox').innerHTML = `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç. Aynı açıklama için daha önce seçtiğin kategori otomatik uygulanır.</div>`;
+  document.getElementById('alertBox').innerHTML = `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
   tabloGoster();
   document.getElementById('previewCard').style.display = 'block';
   document.getElementById('uploadCard').style.display = 'none';
@@ -427,17 +366,17 @@ function tabloGoster() {
       <td>${r.aciklama}${r.toplam_taksit>1?` <span style="font-size:11px;color:var(--muted)">(${r.taksit_no}/${r.toplam_taksit})</span>`:''}</td>
       <td>${r.toplam_taksit>1?'<span class="badge taksit">Taksitli</span>':'<span class="badge normal">Normal</span>'}</td>
       <td>
-        <select class="cat-sel" onchange="ekstreKategoriDegisti(${i},this.value)">
+        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].kategori=this.value">
           ${kategoriler.map(k=>`<option value="${k}" ${k===r.kategori?'selected':''}>${k}</option>`).join('')}
         </select>
       </td>
       <td>
-        <div class="uye-hucre">
-          <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
-            ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
-          </select>
-          <button class="btn uye-asagi" type="button" title="Bu satırdan aşağı hepsine uygula" onclick="uyeyiAsagiUygula(${i})">↓</button>
-        </div>
+        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
+          <option value="harun" ${r.uye==='harun'?'selected':''}>Harun</option>
+          <option value="aslı" ${r.uye==='aslı'?'selected':''}>Aslı</option>
+          <option value="zeynep" ${r.uye==='zeynep'?'selected':''}>Zeynep</option>
+          <option value="zehra" ${r.uye==='zehra'?'selected':''}>Zehra</option>
+        </select>
       </td>
       <td class="amt">${r.tutar.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
     </tr>`).join('');
@@ -446,15 +385,6 @@ function tabloGoster() {
 function tumunuSec(secili) {
   parseEdilenIslemler.forEach(r => r.secili = secili);
   document.querySelectorAll('#islemBody .chk').forEach(c => c.checked = secili);
-}
-
-function uyeyiAsagiUygula(index) {
-  const secilen = parseEdilenIslemler[index]?.uye;
-  if (!secilen) return;
-  for (let i = index; i < parseEdilenIslemler.length; i++) {
-    parseEdilenIslemler[i].uye = secilen;
-  }
-  tabloGoster();
 }
 
 async function kaydet() {
@@ -470,76 +400,43 @@ async function kaydet() {
     try {
       // Duplicate kontrol — aynı tarih + açıklama + tutar var mı?
       const kontrol = await fetch(
-        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${r.kaynak||seciliBanka}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
-        { headers: apiHeaders() }
+        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${r.kaynak||seciliBanka}&select=id`,
+        { headers: HEADERS }
       );
       const mevcut = await kontrol.json();
       if (mevcut.length > 0) { atlandi++; continue; }
 
       // Transactions'a ekle
       await fetch(`${SB_URL}/rest/v1/transactions`, {
-        method: 'POST', headers: apiHeaders(),
+        method: 'POST', headers: HEADERS,
         body: JSON.stringify({
           tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
-          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye, notlar: '', owner_id: authUserId()
+          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye, notlar: ''
         })
       });
 
-      // Taksitliyse installments'a da ekle
+      // Taksitliyse installments'a da ekle (hangi taksit olursa olsun)
       if (r.toplam_taksit > 1) {
-        // Aynı kredi + taksit_no var mı kontrol et (ekstre eşleşme)
+        // Installments duplicate kontrol
         const tKontrol = await fetch(
-          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&taksit_no=eq.${r.taksit_no}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
-          { headers: apiHeaders() }
+          `${SB_URL}/rest/v1/installments?aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&toplam_taksit=eq.${r.toplam_taksit}&select=id`,
+          { headers: HEADERS }
         );
         const tMevcut = await tKontrol.json();
-        
-        if (tMevcut.length > 0) {
-          // Mevcut taksiti güncelle: bu ay ödendi olarak işaretle
-          // (ekstre'deki işlem o ay ödenmiş demek = bu taksit geçti)
-          const tId = tMevcut[0].id;
-          const detay = await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}&owner_id=eq.${encodeURIComponent(authUserId())}&select=kalan_taksit,son_odeme_tarihi,taksit_no,toplam_taksit`, { headers: apiHeaders() });
-          const detayData = await detay.json();
-          if (detayData.length > 0) {
-            const cur = detayData[0];
-            const yk = Math.max(0, Number(cur.kalan_taksit || 0) - 1);
-            const patch = { kalan_taksit: yk, durum: yk <= 0 ? 'odendi' : 'bekliyor' };
-            if (yk > 0) {
-              const sonraki = new Date(((cur.son_odeme_tarihi || r.tarih) + 'T12:00:00'));
-              if (!isNaN(sonraki.getTime())) {
-                sonraki.setMonth(sonraki.getMonth() + 1);
-                patch.son_odeme_tarihi = sonraki.toISOString().split('T')[0];
-              }
-              const mevcutNo = Number(cur.taksit_no || r.taksit_no || 1);
-              const toplam = Number(cur.toplam_taksit || r.toplam_taksit || mevcutNo);
-              patch.taksit_no = Math.min(toplam, mevcutNo + 1);
-            }
-            await fetch(`${SB_URL}/rest/v1/installments?id=eq.${tId}`, {
-              method: 'PATCH', headers: apiHeaders(),
-              body: JSON.stringify(patch)
-            });
-          }
-        } else {
-          // Ekstre satırı bu ayın taksidinin zaten ödendiğini gösterir.
-          // Bu yüzden yeni kayıt açarken kalan_taksit'i 1 azaltıp "sıradaki ödeme"yi yaz.
-          const yeniKalan = Math.max(0, Number(r.kalan_taksit || 0) - 1);
-          if (yeniKalan > 0) {
-            const sonrakiOdeme = new Date(r.tarih + 'T12:00:00');
-            sonrakiOdeme.setMonth(sonrakiOdeme.getMonth() + 1);
-            await fetch(`${SB_URL}/rest/v1/installments`, {
-              method: 'POST', headers: apiHeaders(),
-              body: JSON.stringify({
-                aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
-                toplam_taksit: r.toplam_taksit, kalan_taksit: yeniKalan,
-                taksit_no: Math.min(Number(r.toplam_taksit || 1), Number(r.taksit_no || 1) + 1),
-                son_odeme_tarihi: sonrakiOdeme.toISOString().split('T')[0], durum: 'bekliyor', owner_id: authUserId()
-              })
-            });
-          }
+        if (tMevcut.length === 0) {
+          const sonOdeme = new Date(r.tarih);
+          sonOdeme.setMonth(sonOdeme.getMonth() + r.kalan_taksit - 1);
+          await fetch(`${SB_URL}/rest/v1/installments`, {
+            method: 'POST', headers: HEADERS,
+            body: JSON.stringify({
+              aciklama: r.aciklama, tutar: r.tutar, kaynak: r.kaynak || seciliBanka, uye: r.uye,
+              toplam_taksit: r.toplam_taksit, kalan_taksit: r.kalan_taksit,
+              son_odeme_tarihi: sonOdeme.toISOString().split('T')[0], durum: 'bekliyor'
+            })
+          });
         }
       }
       basarili++;
-      ekstreKatMapKaydet(r.aciklama, r.kategori);
     } catch(e) { hata++; }
   }
 
@@ -552,9 +449,97 @@ async function kaydet() {
   if (hata     > 0) mesajlar.push(`${hata} hata`);
 
   document.getElementById('alertBox').innerHTML = basarili > 0 || atlandi > 0
-    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html?app=1" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
+    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
     : `<div class="alert err">Kayıt başarısız. Bağlantıyı kontrol edin.</div>`;
 }
+
+function parseEtQnb(metin) {
+  const islemler = [];
+  const satirlar = metin.split('\n');
+
+  // QNB formatı: DD/MM/YYYY  AÇIKLAMA  TUTAR  TAKSİT(opsiyonel)
+  // Tutar: 1,234.56 (virgül=binlik, nokta=ondalık — İngilizce format)
+  // Taksit: 1/3, 2/5 vb.
+  const tarihRe  = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
+  const tutarRe  = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*$/;
+  const taksitRe = /\b(\d{1,2})\/(\d{1,2})\b(?!\d)/;
+  // Atlanacak satırlar
+  const skipRe   = /^ödeme\s*-|teşekkür|önceki dönem|devir|parapuan kazanımı|parapuan kullanımı|genel toplam|hesap özeti/i;
+  // Faiz/vergi içeren satırlar atla (ana para kalemi değil)
+  const faizRe   = /\(ana para:/i;
+
+  for (const satir of satirlar) {
+    const s = satir.trim();
+    const match = s.match(tarihRe);
+    if (!match) continue;
+
+    const gun = match[1];
+    const ay  = match[2];
+    const yil = match[3];
+    const tarih = `${yil}-${ay}-${gun}`;
+    const kalan = match[4].trim();
+
+    // Atla
+    if (skipRe.test(kalan)) continue;
+    if (faizRe.test(kalan)) continue;
+
+    // Tutarı bul (satır sonu)
+    const tutarMatch = kalan.match(tutarRe);
+    if (!tutarMatch) continue;
+
+    const tutarStr = tutarMatch[1].replace(/,/g, ''); // binlik virgülü kaldır
+    const tutar = parseFloat(tutarStr);
+    if (isNaN(tutar)) continue;
+
+    // Negatif = iade/ödeme/indirim → atla (sisteme eklemiyoruz)
+    if (tutar < 0) continue;
+    // Sıfır tutar atla
+    if (tutar === 0) continue;
+
+    // Taksit bilgisi
+    // Önce tutarı ve parantez içini temizleyerek taksit ara
+    const kalanTemiz = kalan
+      .replace(tutarRe, '')
+      .replace(/\([^)]*\)/g, '')
+      .trim();
+    const taksitMatch = kalanTemiz.match(taksitRe);
+    let toplamTaksit = 1, kalanTaksit = 1, taksitNo = 1;
+    if (taksitMatch) {
+      const a = parseInt(taksitMatch[1]);
+      const b = parseInt(taksitMatch[2]);
+      if (a >= 1 && a <= b && b >= 2 && b <= 60) {
+        taksitNo = a;
+        toplamTaksit = b;
+        kalanTaksit  = toplamTaksit - taksitNo + 1;
+      }
+    }
+
+    // Açıklamayı temizle
+    let aciklama = kalan
+      .replace(tutarRe, '')
+      .replace(taksitRe, '')
+      .replace(/\([^)]*\)/g, '')  // parantez içi (sipariş kodu, faiz notu)
+      .replace(/bu alışverişinizin sipariş kodu:.*/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    // Çok kısa açıklamaları atla
+    if (!aciklama || aciklama.length < 2) continue;
+
+    islemler.push({
+      tarih, aciklama, tutar,
+      toplam_taksit: toplamTaksit,
+      kalan_taksit:  kalanTaksit,
+      taksit_no:     taksitNo,
+      kategori: ekstreKatHatirlaUygula(aciklama, kategoriTahmin(aciklama)),
+      kaynak: 'qnb',
+      uye: (uyeler[0]?.slug || 'harun'),
+      secili: true
+    });
+  }
+  sonucGoster(islemler);
+}
+
 
 function sifirla() {
   parseEdilenIslemler = [];
