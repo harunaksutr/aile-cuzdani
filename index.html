@@ -181,6 +181,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a href="ekstre.html" style="color:var(--amber)">Ekstre Yükle</a>
   <a href="backup.html" style="color:var(--muted)">Yedek</a>
   <div class="nav-r" style="display:flex;align-items:center;gap:8px">
+    <button type="button" class="btn" style="font-size:12px;padding:5px 10px" onclick="authCikis()" title="Oturumu kapat">Çıkış</button>
     <select class="ay-sel" id="ayS" onchange="ayDegisti()"></select>
     <button onclick="temaToggle()" id="temaBtn" title="Tema" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1">🌙</button>
   </div>
@@ -200,6 +201,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   <a onclick="showPage('ayarlar');menuKapat()"   id="mob-ayarlar">Ayarlar</a>
   <a href="ekstre.html" style="color:var(--amber);padding:12px 20px;display:block">Ekstre Yükle</a>
   <a href="backup.html" style="padding:12px 20px;display:block">💾 Yedek & Geri Yükle</a>
+  <button type="button" class="btn" style="margin:4px 16px 12px;width:calc(100% - 32px);justify-content:center" onclick="authCikis();menuKapat()">Çıkış yap</button>
   <div style="padding:8px 16px 4px;display:flex;gap:8px;align-items:center">
     <select class="ay-sel ay-sel-mob" style="flex:1"></select>
     <button onclick="temaToggle()" style="background:none;border:.5px solid var(--border);border-radius:var(--r);padding:5px 8px;cursor:pointer;font-size:14px;color:var(--muted);line-height:1" id="temaBtnMob">🌙</button>
