@@ -51,7 +51,7 @@ td.mu{color:var(--muted)}
 <body>
 
 <a class="back-btn" href="index.html?app=1">← Dashboard'a dön</a>
-<h2>Garanti BBVA Ekstre Yükle</h2>
+<h2 id="pageTitle">Ekstre yükle</h2>
 
 <div class="card" id="uploadCard">
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
@@ -131,6 +131,13 @@ const BANKA_HINTS = {
   qnb:        'QNB Finansbank kredi kartı ekstresi (.pdf)'
 };
 
+const BANKA_KISA = {
+  garanti: 'Garanti BBVA',
+  enpara: 'Enpara',
+  yapı_kredi: 'Yapı Kredi',
+  qnb: 'QNB Finansbank'
+};
+
 function bankaSec(banka) {
   seciliBanka = banka;
   document.querySelectorAll('[id^=bBtn-]').forEach(b => {
@@ -139,6 +146,9 @@ function bankaSec(banka) {
   const btn = document.getElementById('bBtn-' + banka);
   if (btn) { btn.style.borderColor = 'var(--blue)'; btn.style.color = 'var(--blue)'; }
   document.getElementById('dropHint').textContent = BANKA_HINTS[banka] || 'Kredi kartı ekstresi (.pdf)';
+  const bas = BANKA_KISA[banka] || 'Ekstre';
+  const pt = document.getElementById('pageTitle');
+  if (pt) pt.textContent = bas + ' — ekstre yükle';
 }
 
 const AYLAR = {
@@ -146,22 +156,29 @@ const AYLAR = {
   'Temmuz':'07','Ağustos':'08','Eylül':'09','Ekim':'10','Kasım':'11','Aralık':'12'
 };
 
-// Anahtar kelime → kategori eşleştirme
+// Anahtar kelime → kategori eşleştirme (ilk eşleşen kazanır: e-ticaret / dijital, market anahtarından önce)
 const KAT_MAP = [
-  {keys:['migros','bim','a101','şok','carrefour','metro','macro','kiler','file','market','groseri'],kat:'market'},
-  {keys:['elektrik','doğalgaz','igdaş','iski','su ','fatura','vodafone','turkcell','türk telekom','internet','netflix','spotify','amazon prime','disney','youtube'],kat:'fatura'},
+  {keys:['hepsiburada','trendyol','amazon','n11','gittigidiyor','boyner','lcw','lc waikiki','deichmann','mudo','atakonline','kaft'],kat:'alışveriş'},
+  {keys:['playstation','steam','apple.com','google play','netflix','spotify','iyzico','bitwarden'],kat:'dijital'},
+  {keys:['elektrik','doğalgaz','igdaş','iski','su ','fatura','vodafone','turkcell','türk telekom','internet','amazon prime','disney','youtube'],kat:'fatura'},
   {keys:['opet','bp ','shell','total','petrol','akaryakıt','benzin','lpg'],kat:'yakıt'},
   {keys:['restaurant','restoran','burger','pizza','kfc','mcdonald','starbucks','kahve','cafe','yemek','döner','pide'],kat:'restoran'},
   {keys:['eczane','hastane','klinik','doktor','sağlık','ilaç','optik'],kat:'sağlık'},
   {keys:['okul','dershane','kurs','kitap','kırtasiye','eğitim'],kat:'eğitim'},
-  {keys:['hepsiburada','trendyol','amazon','n11','gittigidiyor','boyner','lcw','lc waikiki','deichmann','mudo','atakonline','kaft'],kat:'alışveriş'},
-  {keys:['playstation','steam','apple.com','google play','netflix','spotify','iyzico','bitwarden'],kat:'dijital'},
-  {keys:['yemeksepeti','moka','getir yemek','migros','sakura','börekçi','cafe','ekmek','mamülle','fırın'],kat:'yeme-içme'},
+  {keys:['migros','bim','a101','şok','carrefour','metro','macro','kiler','groseri','happy center','migro'],kat:'market'},
+  {keys:['yemeksepeti','moka','getir yemek','sakura','börekçi','ekmek','mamülle','fırın'],kat:'yeme-içme'},
   {keys:['jolly','tatil','otel','uçak','turizm','seyahat'],kat:'seyahat'},
   {keys:['universal','pet','veteriner','hayvan'],kat:'evcil hayvan'},
   {keys:['saglik','sağlık','eczane','diş','dental','klinik','hastane'],kat:'sağlık'},
   {keys:['qnb','finansbank'],kat:'banka'},
 ];
+
+/** Supabase kategorileri + ekstre tahmininde kullanılan adlar (dropdown’da seçenek eksik kalmasın) */
+function kategorilerListesiBirlestir(apiListe) {
+  const tahminKategorileri = [...new Set(KAT_MAP.map(m => m.kat))];
+  const birlesik = new Set([...(apiListe || []), ...tahminKategorileri, 'diğer']);
+  return Array.from(birlesik).sort((a, b) => a.localeCompare(b, 'tr'));
+}
 
 function kategoriTahmin(aciklama) {
   const lower = aciklama.toLocaleLowerCase('tr-TR');
@@ -208,8 +225,9 @@ async function pdfYukle(file) {
   // Kategorileri yükle
   try {
     const r = await fetch(`${SB_URL}/rest/v1/categories?aktif=eq.true&order=sira.asc&owner_id=eq.${encodeURIComponent(authUserId())}`, {headers: apiHeaders()});
-    kategoriler = (await r.json()).map(k => k.ad);
-  } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
+    const apiListe = (await r.json()).map(k => k.ad);
+    kategoriler = kategorilerListesiBirlestir(apiListe);
+  } catch(e) { kategoriler = kategorilerListesiBirlestir(['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']); }
 
   // Üyeleri yükle
   try {
@@ -576,6 +594,8 @@ function sifirla() {
   document.getElementById('fileInput').value = '';
   log('');
 }
+
+bankaSec(seciliBanka);
 </script>
 </body>
 </html>
