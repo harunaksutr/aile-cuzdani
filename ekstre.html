@@ -114,6 +114,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let parseEdilenIslemler = [];
 let kategoriler = [];
+let uyeler = [];
 let seciliBanka = 'garanti';
 
 const BANKA_HINTS = {
@@ -180,6 +181,12 @@ async function pdfYukle(file) {
     const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, {headers: HEADERS});
     kategoriler = (await r.json()).map(k => k.ad);
   } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
+
+  // Üyeleri yükle
+  try {
+    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, {headers: HEADERS});
+    uyeler = await ru.json();
+  } catch(e) { uyeler = [{slug:'harun',ad:'Harun'}]; }
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -533,7 +540,7 @@ function parseEtQnb(metin) {
       taksit_no:     taksitNo,
       kategori: kategoriTahmin(aciklama),
       kaynak: 'qnb',
-      uye: (uyeler[0]?.slug || 'harun'),
+      uye: (uyeler.length ? uyeler[0].slug : 'harun'),
       secili: true
     });
   }
