@@ -529,7 +529,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.0/dist/umd/supabase.js"></script>
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
@@ -543,15 +543,21 @@ function authHeaders() {
 }
 
 function firebaseHazir() {
-  return typeof firebase !== 'undefined' && firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('YOUR_') !== 0;
+  try {
+    return typeof firebase !== 'undefined'
+      && typeof firebaseConfig !== 'undefined'
+      && firebaseConfig.apiKey
+      && String(firebaseConfig.apiKey).indexOf('YOUR_') !== 0;
+  } catch (e) { return false; }
 }
 
 async function initAuth() {
-  if (typeof supabase === 'undefined' || !supabase.createClient) {
+  const Sb = (typeof supabase !== 'undefined' && supabase.createClient) ? supabase : (window.supabase && window.supabase.createClient ? window.supabase : null);
+  if (!Sb) {
     console.error('Supabase SDK yüklenemedi');
     return false;
   }
-  sbAuth = supabase.createClient(SB_URL, SB_KEY, {
+  sbAuth = Sb.createClient(SB_URL, SB_KEY, {
     auth: { persistSession: true, autoRefreshToken: true, storage: localStorage, detectSessionInUrl: true }
   });
   sbAuth.auth.onAuthStateChange((_e, session) => {
@@ -691,6 +697,12 @@ async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{
 async function sbPost(t,b){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:authHeaders(),body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function sbPatch(t,p,b){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{method:'PATCH',headers:authHeaders(),body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function sbDelete(t,p){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{method:'DELETE',headers:authHeaders()});if(!r.ok)throw new Error(await r.text());return r.json();}
+
+function withOwner(row) {
+  const oid = localStorage.getItem('ac_user_id');
+  if (!oid) return row;
+  return Object.assign({}, row, { owner_id: oid });
+}
 
 function bugunAy(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function bugunTarih(){return new Date().toISOString().split('T')[0];}
@@ -878,7 +890,7 @@ async function islemEkle(){
   const kaynak=(ky==='havale'||ky==='eft')?ky+'_'+document.getElementById('fBanka').value:ky;
   const body={tarih:document.getElementById('fT').value,tutar:parseFloat(document.getElementById('fTu').value),aciklama:document.getElementById('fA').value,kategori:document.getElementById('fK').value,kaynak,uye:document.getElementById('fU').value,notlar:document.getElementById('fN').value};
   if(!body.tarih||!body.tutar||!body.aciklama){toast('Tarih, tutar ve açıklama zorunlu',true);return;}
-  try{await sbPost('transactions',body);toast('İşlem kaydedildi');formTemizle();}catch(e){toast('Hata: '+e.message,true);}
+  try{await sbPost('transactions',withOwner(body));toast('İşlem kaydedildi');formTemizle();}catch(e){toast('Hata: '+e.message,true);}
 }
 
 // TAKSİTLER
@@ -940,7 +952,7 @@ async function taksitleriYukle(){
 async function taksitEkle(){
   const body={aciklama:document.getElementById('tA').value,tutar:parseFloat(document.getElementById('tT').value),kaynak:document.getElementById('tKy').value,uye:document.getElementById('tU').value,toplam_taksit:parseInt(document.getElementById('tTo').value),kalan_taksit:parseInt(document.getElementById('tKa').value),son_odeme_tarihi:document.getElementById('tD').value,durum:'bekliyor'};
   if(!body.aciklama||!body.tutar||!body.son_odeme_tarihi){toast('Açıklama, tutar ve tarih zorunlu',true);return;}
-  try{await sbPost('installments',body);toast('Taksit eklendi');taksitFormuToggle();['tA','tT','tD'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('tTo').value='1';document.getElementById('tKa').value='1';taksitleriYukle();}catch(e){toast('Hata: '+e.message,true);}
+  try{await sbPost('installments',withOwner(body));toast('Taksit eklendi');taksitFormuToggle();['tA','tT','tD'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('tTo').value='1';document.getElementById('tKa').value='1';taksitleriYukle();}catch(e){toast('Hata: '+e.message,true);}
 }
 let _odemeModalId=null;
 function taksitOdemeModal(id){
@@ -965,7 +977,7 @@ async function taksitOdendi(id,odemeYontemi){
     const t=inst[0];
     const yk=t.kalan_taksit-1;
     // İşlemler tablosuna da kaydet
-    await sbPost('transactions',{
+    await sbPost('transactions',withOwner({
       tarih:new Date().toISOString().split('T')[0],
       aciklama:t.aciklama,
       tutar:t.tutar,
@@ -973,7 +985,7 @@ async function taksitOdendi(id,odemeYontemi){
       kaynak:odemeYontemi||t.kaynak,
       uye:t.uye,
       notlar:`Taksit ödemesi`
-    });
+    }));
     await sbPatch('installments',`id=eq.${id}`,{kalan_taksit:yk,durum:yk<=0?'odendi':'bekliyor'});
     toast(yk<=0?'Taksit tamamlandı!':`${yk} taksit kaldı`);
     taksitleriYukle();
@@ -1112,7 +1124,7 @@ async function krediEkle(){
     notlar, durum:'aktif'
   };
   try{
-    const kreRes=await sbPost('loans',body);
+    const kreRes=await sbPost('loans',withOwner(body));
     const loanId=kreRes?.[0]?.id;
     
     // Gelecek taksitleri (ödenmemiş) installments tablosuna otomatik ekle
@@ -1137,7 +1149,7 @@ async function krediEkle(){
       }
       // Toplu ekle (batch)
       for(const t of taksitler){
-        await sbPost('installments',t);
+        await sbPost('installments',withOwner(t));
       }
       toast(`Kredi eklendi · ${kalanTaksit} taksit oluşturuldu`);
     } else {
@@ -1184,7 +1196,7 @@ async function butceYukle(){
 }
 async function butceKaydet(){
   const uyeler=['hepsi',..._uyeler.map(u=>u.slug)];
-  try{for(const u of uyeler){const val=document.getElementById('b_'+u)?.value;if(!val||parseFloat(val)<=0)continue;const m=await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);if(m.length){await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef:parseFloat(val),updated_at:new Date().toISOString()});}else{await sbPost('budgets',{ay:secilenAy,uye:u,kategori:'genel',hedef:parseFloat(val)});}}toast('Bütçe kaydedildi');}catch(e){toast('Hata: '+e.message,true);}
+  try{for(const u of uyeler){const val=document.getElementById('b_'+u)?.value;if(!val||parseFloat(val)<=0)continue;const m=await sbGet('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`);if(m.length){await sbPatch('budgets',`ay=eq.${secilenAy}&uye=eq.${encodeURIComponent(u)}&kategori=eq.genel`,{hedef:parseFloat(val),updated_at:new Date().toISOString()});}else{await sbPost('budgets',withOwner({ay:secilenAy,uye:u,kategori:'genel',hedef:parseFloat(val)}));}}toast('Bütçe kaydedildi');}catch(e){toast('Hata: '+e.message,true);}
 }
 
 // AYARLAR
@@ -1214,7 +1226,7 @@ function katListesiGoster(){
     </tr>`).join('')}</tbody>
   </table>`;
 }
-async function kategoriEkle(){const ad=document.getElementById('yKat').value.trim().toLowerCase();if(!ad){toast('Kategori adı girin',true);return;}try{await sbPost('categories',{ad,renk:'#888780',sira:_kategoriler.length+1});toast('Kategori eklendi: '+ad);document.getElementById('yKat').value='';await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
+async function kategoriEkle(){const ad=document.getElementById('yKat').value.trim().toLowerCase();if(!ad){toast('Kategori adı girin',true);return;}try{await sbPost('categories',withOwner({ad,renk:'#888780',sira:_kategoriler.length+1}));toast('Kategori eklendi: '+ad);document.getElementById('yKat').value='';await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
 async function kategoriSil(ad){if(!confirm(`"${ad}" silinsin mi?`))return;try{await sbDelete('categories',`ad=eq.${encodeURIComponent(ad)}`);toast('Silindi');await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
 
 
@@ -1395,7 +1407,7 @@ async function uyeEkle() {
     .replace(/[^a-z0-9]/g,'_');
   const sira = _uyeler.length + 1;
   try {
-    await sbPost('members', {slug, ad, renk, sira, aktif: true});
+    await sbPost('members', withOwner({slug, ad, renk, sira, aktif: true}));
     toast('Üye eklendi: ' + ad);
     document.getElementById('yUyeAd').value = '';
     await uyeleriYukle();
