@@ -31,8 +31,12 @@ tr:last-child td{border-bottom:none}
 select{font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:var(--muted)}
 .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
-.badge.adm{background:rgba(55,138,221,.15);color:var(--blue)}
+.badge.adm{background:rgba(55,138,221,.2);color:#185FA5;border:.5px solid rgba(55,138,221,.35)}
 .badge.usr{background:rgba(0,0,0,.06);color:var(--muted)}
+.role-cell{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.role-txt{font-size:12px;font-weight:600;letter-spacing:.02em}
+.role-txt.adm{color:#185FA5}
+.role-txt.usr{color:var(--muted)}
 .loader{color:var(--muted);padding:24px;text-align:center;font-size:13px}
 @media(max-width:700px){body{padding:14px 12px}table{min-width:100%;font-size:12px}}
 </style>
@@ -91,6 +95,11 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
+/** DB'de Admin / ADMIN / boşluk gibi farklar için */
+function rolNormalize(r) {
+  return (r == null ? '' : String(r)).trim().toLowerCase();
+}
+
 async function baslat() {
   const area = document.getElementById('mainArea');
   if (!authToken()) {
@@ -118,7 +127,7 @@ async function baslat() {
         </div>`;
       return;
     }
-    if (me[0].role !== 'admin') {
+    if (rolNormalize(me[0].role) !== 'admin') {
       area.innerHTML = `
         <div class="card">
           <div class="alert warn" style="margin:0">
@@ -175,14 +184,25 @@ async function baslat() {
 function satirHtml(u, myId) {
   const created = u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '—';
   const isSelf = u.id === myId;
-  const selUser = u.role === 'user' ? 'selected' : '';
-  const selAdmin = u.role === 'admin' ? 'selected' : '';
-  const badge = u.role === 'admin'
-    ? '<span class="badge adm">Yönetici</span>'
-    : '<span class="badge usr">Kullanıcı</span>';
+  const rn = rolNormalize(u.role);
+  const selUser = rn === 'user' ? 'selected' : '';
+  const selAdmin = rn === 'admin' ? 'selected' : '';
+  let badge;
+  let rtxt;
+  if (rn === 'admin') {
+    badge = '<span class="badge adm">ADMIN</span>';
+    rtxt = '<span class="role-txt adm">Yönetici</span>';
+  } else if (rn === 'user') {
+    badge = '<span class="badge usr">ÜYE</span>';
+    rtxt = '<span class="role-txt usr">Kullanıcı</span>';
+  } else {
+    badge = `<span class="badge usr">${escapeHtml(u.role || '—')}</span>`;
+    rtxt = '<span class="role-txt usr">Tanımsız rol</span>';
+  }
+  const rolHucre = `<div class="role-cell">${rtxt}${badge}</div>`;
   return `<tr class="tr-h" data-id="${escapeHtml(u.id)}">
     <td>${escapeHtml(u.email || '—')}</td>
-    <td>${badge}</td>
+    <td>${rolHucre}</td>
     <td style="white-space:nowrap;font-size:12px;color:var(--muted)">${escapeHtml(created)}</td>
     <td><span class="mono" title="${escapeHtml(u.id)}">${escapeHtml(kisaId(u.id))}</span>
       <button type="button" class="btn" style="padding:4px 8px;font-size:11px;margin-left:6px" onclick="kopyala('${escapeHtml(u.id)}')">Kopyala</button>
@@ -233,9 +253,11 @@ document.getElementById('mainArea').addEventListener('click', async (ev) => {
     });
     sel.setAttribute('data-was', yeni);
     const badgeCell = tr.children[1];
-    badgeCell.innerHTML = yeni === 'admin'
-      ? '<span class="badge adm">Yönetici</span>'
-      : '<span class="badge usr">Kullanıcı</span>';
+    if (yeni === 'admin') {
+      badgeCell.innerHTML = '<div class="role-cell"><span class="role-txt adm">Yönetici</span><span class="badge adm">ADMIN</span></div>';
+    } else {
+      badgeCell.innerHTML = '<div class="role-cell"><span class="role-txt usr">Kullanıcı</span><span class="badge usr">ÜYE</span></div>';
+    }
     alertBox('Rol güncellendi.', 'info');
     setTimeout(() => alertBox(''), 2200);
   } catch (e) {
