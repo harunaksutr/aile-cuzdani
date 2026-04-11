@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aile Cüzdanı</title>
+<script>
+(function () {
+  try {
+    var q = new URLSearchParams(window.location.search || '');
+    if (q.get('app') === '1') return;
+    if (q.get('code')) return;
+    if ((window.location.hash || '').indexOf('access_token') !== -1) return;
+    if (window.localStorage.getItem('ac_access_token')) return;
+    var i, k;
+    for (i = 0; i < window.localStorage.length; i++) {
+      k = window.localStorage.key(i);
+      if (k && k.indexOf('sb-') === 0 && k.indexOf('auth-token') !== -1) return;
+    }
+  } catch (e) {}
+  window.location.replace('landing.html');
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root{--bg:#f5f5f3;--card:#fff;--border:rgba(0,0,0,.08);--text:#1a1a18;--muted:#73726c;--blue:#378ADD;--green:#1D9E75;--amber:#EF9F27;--coral:#D85A30;--purple:#7F77DD;--red:#E24B4A;--r:10px;--rl:14px}
