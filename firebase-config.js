@@ -7,10 +7,10 @@
  * (signInWithIdToken için Google sağlayıcısı açık olmalı.)
  */
 const firebaseConfig = {
-  apiKey: 'YOUR_WEB_API_KEY',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID',
+  apiKey: 'AIzaSyB9Y-jdwckqWIHc3QQfw6p2xDpHBI5dYNE',
+  authDomain: 'cuzdan-c3d4e.firebaseapp.com',
+  projectId: 'cuzdan-c3d4e',
+  storageBucket: 'cuzdan-c3d4e.firebasestorage.app',
+  messagingSenderId: '96900092332',
+  appId: '1:96900092332:web:ba82953e490c6f97426a09',
 };
