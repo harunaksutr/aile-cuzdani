@@ -531,7 +531,7 @@ function parseEtQnb(metin) {
       toplam_taksit: toplamTaksit,
       kalan_taksit:  kalanTaksit,
       taksit_no:     taksitNo,
-      kategori: ekstreKatHatirlaUygula(aciklama, kategoriTahmin(aciklama)),
+      kategori: kategoriTahmin(aciklama),
       kaynak: 'qnb',
       uye: (uyeler[0]?.slug || 'harun'),
       secili: true
