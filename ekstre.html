@@ -470,73 +470,65 @@ function parseEtQnb(metin) {
   const islemler = [];
   const satirlar = metin.split('\n');
 
-  // QNB formatı: DD/MM/YYYY  AÇIKLAMA  TUTAR  TAKSİT(opsiyonel)
-  // Tutar: 1,234.56 (virgül=binlik, nokta=ondalık — İngilizce format)
-  // Taksit: 1/3, 2/5 vb.
-  const tarihRe  = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
-  const tutarRe  = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*$/;
-  const taksitRe = /\b(\d{1,2})\/(\d{1,2})\b(?!\d)/;
-  // Atlanacak satırlar
-  const skipRe   = /^ödeme\s*-|teşekkür|önceki dönem|devir|parapuan kazanımı|parapuan kullanımı|genel toplam|hesap özeti/i;
-  // Faiz/vergi içeren satırlar atla (ana para kalemi değil)
-  const faizRe   = /\(ana para:/i;
+  // QNB: DD/MM/YYYY  AÇIKLAMA  TUTAR  [TAKSİT a/b]
+  // Tutar İngilizce format: 1,234.56 (virgül binlik). Taksit satır sonunda "3/3" olabiliyor — tutar bundan ÖNCE.
+  const tarihRe       = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
+  const tutarRe       = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*$/;
+  const trailTaksitRe = /\s+(\d{1,2})\/(\d{1,2})\s*$/;
+  const taksitRe      = /\b(\d{1,2})\/(\d{1,2})\b(?!\d)/;
+  // Kart ödemesi, dönem özeti, parapuan özeti, genel toplam
+  const skipRe = /ödeme\s*-\s*tesekk|ödeme\s*-|teşekkür\s+ederiz|önceki\s*dönem\s*bakiye|önceki\s*dönem|devir|parapuan\s*kazanımı|parapuan\s*kullanımı|e-ticaret\s+kampanyası|genel\s+toplam|hesap\s+özeti|^para\s*puan\s+işlemleriniz/i;
+  const faizRe = /\(ana para:/i;
 
   for (const satir of satirlar) {
     const s = satir.trim();
     const match = s.match(tarihRe);
     if (!match) continue;
 
-    const gun = match[1];
-    const ay  = match[2];
-    const yil = match[3];
-    const tarih = `${yil}-${ay}-${gun}`;
+    const tarih = `${match[3]}-${match[2]}-${match[1]}`;
     const kalan = match[4].trim();
 
-    // Atla
     if (skipRe.test(kalan)) continue;
     if (faizRe.test(kalan)) continue;
 
-    // Tutarı bul (satır sonu)
-    const tutarMatch = kalan.match(tutarRe);
+    const endTaksit = kalan.match(trailTaksitRe);
+    const kalanForTutar = kalan.replace(trailTaksitRe, '').trim();
+    const tutarMatch = kalanForTutar.match(tutarRe);
     if (!tutarMatch) continue;
 
-    const tutarStr = tutarMatch[1].replace(/,/g, ''); // binlik virgülü kaldır
-    const tutar = parseFloat(tutarStr);
-    if (isNaN(tutar)) continue;
+    const tutar = parseFloat(tutarMatch[1].replace(/,/g, ''));
+    if (isNaN(tutar) || tutar <= 0) continue;
 
-    // Negatif = iade/ödeme/indirim → atla (sisteme eklemiyoruz)
-    if (tutar < 0) continue;
-    // Sıfır tutar atla
-    if (tutar === 0) continue;
-
-    // Taksit bilgisi
-    // Önce tutarı ve parantez içini temizleyerek taksit ara
-    const kalanTemiz = kalan
-      .replace(tutarRe, '')
-      .replace(/\([^)]*\)/g, '')
-      .trim();
-    const taksitMatch = kalanTemiz.match(taksitRe);
     let toplamTaksit = 1, kalanTaksit = 1, taksitNo = 1;
-    if (taksitMatch) {
-      const a = parseInt(taksitMatch[1]);
-      const b = parseInt(taksitMatch[2]);
+    if (endTaksit) {
+      const a = parseInt(endTaksit[1], 10);
+      const b = parseInt(endTaksit[2], 10);
       if (a >= 1 && a <= b && b >= 2 && b <= 60) {
         taksitNo = a;
         toplamTaksit = b;
-        kalanTaksit  = toplamTaksit - taksitNo + 1;
+        kalanTaksit = toplamTaksit - taksitNo + 1;
+      }
+    } else {
+      const kalanTemiz = kalanForTutar.replace(tutarRe, '').replace(/\([^)]*\)/g, '').trim();
+      const taksitMatch = kalanTemiz.match(taksitRe);
+      if (taksitMatch) {
+        const a = parseInt(taksitMatch[1], 10);
+        const b = parseInt(taksitMatch[2], 10);
+        if (a >= 1 && a <= b && b >= 2 && b <= 60) {
+          taksitNo = a;
+          toplamTaksit = b;
+          kalanTaksit = toplamTaksit - taksitNo + 1;
+        }
       }
     }
 
-    // Açıklamayı temizle
-    let aciklama = kalan
+    let aciklama = kalanForTutar
       .replace(tutarRe, '')
-      .replace(taksitRe, '')
-      .replace(/\([^)]*\)/g, '')  // parantez içi (sipariş kodu, faiz notu)
+      .replace(/\([^)]*\)/g, '')
       .replace(/bu alışverişinizin sipariş kodu:.*/i, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
 
-    // Çok kısa açıklamaları atla
     if (!aciklama || aciklama.length < 2) continue;
 
     islemler.push({
