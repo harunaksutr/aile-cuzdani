@@ -113,19 +113,43 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <body>
 <div id="authGate" style="display:none;position:fixed;inset:0;z-index:300;background:var(--bg);align-items:center;justify-content:center;padding:20px;flex-direction:column">
   <div class="card" style="max-width:420px;width:100%;padding:22px 24px">
-    <div class="ct" style="margin-bottom:6px">Aile Cüzdanı</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Verileriniz yalnızca hesabınıza aittir.</p>
+    <div class="ct" style="margin-bottom:16px;text-align:center">Aile Cüzdanı</div>
 
-    <!-- E-posta / Şifre -->
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+    <!-- Sekmeler -->
+    <div style="display:flex;border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px">
+      <button id="tabLogin" onclick="authSekme('login')"
+        style="flex:1;padding:9px;font-size:13px;border:none;cursor:pointer;background:var(--blue);color:#fff;font-weight:500">
+        Giriş Yap
+      </button>
+      <button id="tabSignup" onclick="authSekme('signup')"
+        style="flex:1;padding:9px;font-size:13px;border:none;cursor:pointer;background:transparent;color:var(--muted)">
+        Kayıt Ol
+      </button>
+    </div>
+
+    <!-- Login formu -->
+    <div id="formLogin" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
       <input id="authEmail" type="email" placeholder="E-posta" autocomplete="email"
         style="padding:10px 12px;border-radius:var(--r);border:.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:100%"
         onkeydown="if(event.key==='Enter')document.getElementById('authPass').focus()">
       <input id="authPass" type="password" placeholder="Şifre" autocomplete="current-password"
         style="padding:10px 12px;border-radius:var(--r);border:.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:100%"
-        onkeydown="if(event.key==='Enter')authEmail()">
+        onkeydown="if(event.key==='Enter')authEmailSifre()">
       <button type="button" class="btn pri" style="width:100%;justify-content:center;padding:10px 16px" onclick="authEmailSifre()">
         Giriş Yap
+      </button>
+    </div>
+
+    <!-- Signup formu -->
+    <div id="formSignup" style="display:none;flex-direction:column;gap:10px;margin-bottom:14px">
+      <input id="authSignupEmail" type="email" placeholder="E-posta" autocomplete="email"
+        style="padding:10px 12px;border-radius:var(--r);border:.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:100%"
+        onkeydown="if(event.key==='Enter')document.getElementById('authSignupPass').focus()">
+      <input id="authSignupPass" type="password" placeholder="Şifre (en az 6 karakter)" autocomplete="new-password"
+        style="padding:10px 12px;border-radius:var(--r);border:.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:100%"
+        onkeydown="if(event.key==='Enter')authKayitOl()">
+      <button type="button" class="btn pri" style="width:100%;justify-content:center;padding:10px 16px" onclick="authKayitOl()">
+        Kayıt Ol
       </button>
     </div>
 
@@ -139,10 +163,11 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
     <!-- Google -->
     <button type="button" class="btn" style="width:100%;justify-content:center;gap:10px;padding:10px 16px" id="btnGoogle" onclick="authGoogle()">
       <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-      Google ile Giriş Yap
+      Google ile Devam Et
     </button>
 
-    <div id="authErr" style="display:none;margin-top:12px;font-size:12px;color:var(--red)"></div>
+    <div id="authErr" style="display:none;margin-top:12px;font-size:12px;color:var(--red);text-align:center"></div>
+    <div id="authOk" style="display:none;margin-top:12px;font-size:12px;color:var(--green);text-align:center"></div>
   </div>
 </div>
 <nav>
@@ -590,7 +615,44 @@ async function initAuth() {
     localStorage.setItem('ac_user_id', session.user.id);
   }
   // Firebase init kaldırıldı
+  // URL param ile sekme seç (landing.html'den gelinince)
+  const urlMod = new URLSearchParams(window.location.search).get('auth');
+  if (urlMod === 'signup' || urlMod === 'login') {
+    setTimeout(() => authSekme(urlMod), 50);
+  }
   return !!session;
+}
+
+// URL param'a göre sekme seç (landing.html'den gelinince)
+function authSekme(mod) {
+  const isLogin = mod !== 'signup';
+  document.getElementById('formLogin').style.display  = isLogin ? 'flex' : 'none';
+  document.getElementById('formSignup').style.display = isLogin ? 'none' : 'flex';
+  document.getElementById('tabLogin').style.background  = isLogin ? 'var(--blue)' : 'transparent';
+  document.getElementById('tabLogin').style.color       = isLogin ? '#fff' : 'var(--muted)';
+  document.getElementById('tabSignup').style.background = isLogin ? 'transparent' : 'var(--blue)';
+  document.getElementById('tabSignup').style.color      = isLogin ? 'var(--muted)' : '#fff';
+  document.getElementById('authErr').style.display = 'none';
+  document.getElementById('authOk').style.display  = 'none';
+}
+
+async function authKayitOl() {
+  const errEl = document.getElementById('authErr');
+  const okEl  = document.getElementById('authOk');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  const email = document.getElementById('authSignupEmail').value.trim();
+  const pass  = document.getElementById('authSignupPass').value;
+  if (!email || !pass) { errEl.textContent = 'E-posta ve şifre gereklidir.'; errEl.style.display = 'block'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Şifre en az 6 karakter olmalıdır.'; errEl.style.display = 'block'; return; }
+  try {
+    const { error } = await sbAuth.auth.signUp({ email, password: pass });
+    if (error) throw error;
+    okEl.textContent = 'Kayıt başarılı! E-postanızı doğrulayın, ardından giriş yapabilirsiniz.';
+    okEl.style.display = 'block';
+  } catch (e) {
+    errEl.textContent = e?.message || String(e);
+    errEl.style.display = 'block';
+  }
 }
 
 async function authEmailSifre() {
