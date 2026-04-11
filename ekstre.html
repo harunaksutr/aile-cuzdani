@@ -177,12 +177,22 @@ const KAT_MAP = [
   {keys:['qnb','finansbank'],kat:'banka'},
 ];
 
-/** Supabase kategorileri + ekstre tahmininde kullanılan adlar (dropdown’da seçenek eksik kalmasın) */
-function kategorilerListesiBirlestir(apiListe) {
-  const tahminKategorileri = [...new Set(KAT_MAP.map(m => m.kat))];
-  const birlesik = new Set([...(apiListe || []), ...tahminKategorileri, 'diğer']);
-  return Array.from(birlesik).sort((a, b) => a.localeCompare(b, 'tr'));
-}
+/** İç tahmin etiketi → senin kategori adlarına olası eş sırası (ilk bulunan kullanılır) */
+const TAHMIN_KULLANICI_ESI = {
+  'alışveriş': ['internet-alisveris', 'internet alışveriş', 'alışveriş', 'alisveris', 'market'],
+  'dijital': ['internet-alisveris', 'eğlence-uyelikler', 'eglence-uyelikler', 'iş', 'is'],
+  'fatura': ['fatura'],
+  'yakıt': ['ulasim', 'ulaşım', 'yakıt'],
+  'restoran': ['restoran', 'bes'],
+  'sağlık': ['saglik', 'sağlık'],
+  'eğitim': ['egitim-kurs', 'eğitim-kurs', 'okul', 'eğitim', 'egitim'],
+  'market': ['market', 'bes'],
+  'yeme-içme': ['bes', 'restoran', 'yeme-içme', 'yeme-icme'],
+  'seyahat': ['ulasim', 'ulaşım', 'eglence-uyelikler', 'eğlence-uyelikler'],
+  'evcil hayvan': ['bes', 'diger', 'diğer'],
+  'banka': ['kredi kartı', 'kredi karti', 'banka'],
+  'diğer': ['diger', 'diğer']
+};
 
 function kategoriTahmin(aciklama) {
   const lower = aciklama.toLocaleLowerCase('tr-TR');
@@ -190,6 +200,30 @@ function kategoriTahmin(aciklama) {
     if (m.keys.some(k => lower.includes(k))) return m.kat;
   }
   return 'diğer';
+}
+
+/**
+ * Tahmini, kullanıcının Supabase’teki gerçek kategori adlarından birine çevirir (dropdown ile birebir).
+ */
+function kategoriTahminKayitli(aciklama, mevcutAdlar) {
+  const adlar = mevcutAdlar && mevcutAdlar.length ? mevcutAdlar : [];
+  if (!adlar.length) return kategoriTahmin(aciklama);
+  const ic = kategoriTahmin(aciklama);
+  const f = (s) => turkceRegexFold(String(s));
+  const adaGore = new Map(adlar.map((a) => [f(a), a]));
+
+  const adaylar = TAHMIN_KULLANICI_ESI[ic] || [];
+  for (const aday of adaylar) {
+    if (adaGore.has(f(aday))) return adaGore.get(f(aday));
+  }
+  if (adaGore.has(f(ic))) return adaGore.get(f(ic));
+  for (const a of adlar) {
+    if (f(a) === f(ic)) return a;
+  }
+  for (const d of ['diger', 'diğer', 'diger']) {
+    if (adaGore.has(f(d))) return adaGore.get(f(d));
+  }
+  return adlar[0];
 }
 
 function log(msg) { document.getElementById('log').textContent = msg; }
@@ -229,9 +263,9 @@ async function pdfYukle(file) {
   // Kategorileri yükle
   try {
     const r = await fetch(`${SB_URL}/rest/v1/categories?aktif=eq.true&order=sira.asc&owner_id=eq.${encodeURIComponent(authUserId())}`, {headers: apiHeaders()});
-    const apiListe = (await r.json()).map(k => k.ad);
-    kategoriler = kategorilerListesiBirlestir(apiListe);
-  } catch(e) { kategoriler = kategorilerListesiBirlestir(['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']); }
+    const rows = await r.json();
+    kategoriler = rows.map((k) => k.ad);
+  } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
 
   // Üyeleri yükle
   try {
@@ -309,7 +343,7 @@ function parseEtGaranti(metin) {
     if (taksitMatch) { toplamTaksit=parseInt(taksitMatch[2]); taksitNo=parseInt(taksitMatch[3]); kalanTaksit=toplamTaksit-taksitNo+1; }
     let aciklama = kalan.replace(taksitRe,'').replace(tutarRe,'').replace(/\s+\d+\s*$/,'').replace(/\s{2,}/g,' ').trim();
     if (!aciklama || aciklama.length < 2) continue;
-    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahmin(aciklama), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
+    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahminKayitli(aciklama, kategoriler), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
   }
   sonucGoster(islemler);
 }
@@ -381,7 +415,7 @@ function parseEtEnpara(metin) {
       toplam_taksit: toplamTaksit,
       kalan_taksit:  kalanTaksit,
       taksit_no:     taksitNo,
-      kategori: kategoriTahmin(aciklama),
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
       kaynak: 'enpara',
       uye: (uyeler[0]?.slug||'harun'),
       secili: true
@@ -581,7 +615,7 @@ function parseEtQnb(metin) {
       toplam_taksit: toplamTaksit,
       kalan_taksit:  kalanTaksit,
       taksit_no:     taksitNo,
-      kategori: kategoriTahmin(aciklama),
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
       kaynak: 'qnb',
       uye: (uyeler.length ? uyeler[0].slug : 'harun'),
       secili: true
