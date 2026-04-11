@@ -43,7 +43,11 @@ td.mu{color:var(--muted)}
 .alert.suc{background:rgba(29,158,117,.1);color:var(--green);border:.5px solid rgba(29,158,117,.3)}
 .alert.err{background:rgba(226,75,74,.1);color:var(--red);border:.5px solid rgba(226,75,74,.3)}
 .sel-all{font-size:12px;color:var(--blue);cursor:pointer;text-decoration:underline}
-.cat-sel{font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text)}
+.cat-sel{font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);min-width:10rem;max-width:100%}
+/* overflow-x:auto içinde <select> açılır listesi çoğu tarayıcıda kırpılır (ör. 10 seçenekten 6 görünür) */
+.tbl-ekstre-outer{overflow:visible;width:100%}
+#islemTablosu.tbl-ekstre{min-width:720px;width:100%}
+@media(max-width:800px){body{overflow-x:auto;-webkit-overflow-scrolling:touch}}
 .back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
 .back-btn:hover{color:var(--text)}
 </style>
@@ -86,8 +90,8 @@ td.mu{color:var(--muted)}
     </div>
   </div>
 
-  <div style="overflow-x:auto">
-    <table id="islemTablosu">
+  <div class="tbl-ekstre-outer">
+    <table id="islemTablosu" class="tbl-ekstre">
       <thead>
         <tr>
           <th><input type="checkbox" class="chk" onchange="tumunuSec(this.checked)"></th>
