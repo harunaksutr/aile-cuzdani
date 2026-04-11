@@ -119,7 +119,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
       Google ile devam et
     </button>
-    <p id="authSetupHint" style="display:none;margin-top:14px;font-size:12px;color:var(--amber)">Firebase: <code>firebase-config.js</code> dosyasındaki anahtarları doldurun.</p>
+    
     <div id="authErr" style="display:none;margin-top:12px;font-size:12px;color:var(--red)"></div>
   </div>
 </div>
@@ -526,9 +526,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="./firebase-config.js"></script>
+<!-- Firebase kaldırıldı: Supabase OAuth kullanılıyor -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.0/dist/umd/supabase.js"></script>
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
@@ -542,14 +540,7 @@ function authHeaders() {
   return { apikey: SB_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'return=representation' };
 }
 
-function firebaseHazir() {
-  try {
-    return typeof firebase !== 'undefined'
-      && typeof firebaseConfig !== 'undefined'
-      && firebaseConfig.apiKey
-      && String(firebaseConfig.apiKey).indexOf('YOUR_') !== 0;
-  } catch (e) { return false; }
-}
+function firebaseHazir() { return true; } // Firebase kaldırıldı — Supabase OAuth kullanılıyor
 
 async function initAuth() {
   const Sb = (typeof supabase !== 'undefined' && supabase.createClient) ? supabase : (window.supabase && window.supabase.createClient ? window.supabase : null);
@@ -576,37 +567,25 @@ async function initAuth() {
     localStorage.setItem('ac_access_token', session.access_token);
     localStorage.setItem('ac_user_id', session.user.id);
   }
-  if (firebaseHazir()) {
-    try {
-      if (firebase.apps.length === 0) firebase.initializeApp(firebaseConfig);
-    } catch (err) { console.warn('Firebase init', err); }
-  }
+  // Firebase init kaldırıldı
   return !!session;
 }
 
 async function authGoogle() {
   const errEl = document.getElementById('authErr');
-  const hint = document.getElementById('authSetupHint');
   errEl.style.display = 'none';
-  if (!firebaseHazir()) {
-    if (hint) hint.style.display = 'block';
-    errEl.textContent = 'Önce firebase-config.js içinde Firebase Web yapılandırmasını doldurun.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (hint) hint.style.display = 'none';
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    await firebase.auth().signInWithPopup(provider);
-    const idToken = await firebase.auth().currentUser.getIdToken(true);
-    const { error } = await sbAuth.auth.signInWithIdToken({ provider: 'google', token: idToken });
+    // Supabase OAuth — Firebase bypass
+    const { error } = await sbAuth.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
     if (error) throw error;
-    document.getElementById('authGate').style.display = 'none';
-    await devamBootstrap();
+    // Redirect gerçekleşecek — sayfa yeniden yüklenecek
   } catch (e) {
     const msg = e?.message || String(e);
-    if (msg.indexOf('popup_closed') !== -1 || msg.indexOf('cancelled') !== -1) return;
     errEl.textContent = msg;
     errEl.style.display = 'block';
   }
@@ -616,7 +595,7 @@ async function authCikis() {
   if (!confirm('Çıkış yapılsın mı?')) return;
   try {
     if (sbAuth) await sbAuth.auth.signOut();
-    if (typeof firebase !== 'undefined' && firebase.auth) await firebase.auth().signOut();
+    // Firebase signOut kaldırıldı
   } catch (e) { /* ignore */ }
   _accessToken = null;
   localStorage.removeItem('ac_access_token');
@@ -1441,7 +1420,7 @@ async function uyeSil(id, ad) {
   const loggedIn = await initAuth();
   if (!loggedIn) {
     gate.style.display = 'flex';
-    if (!firebaseHazir()) {
+    if (false) { // Supabase OAuth - kontrol gereksiz
       const hint = document.getElementById('authSetupHint');
       if (hint) hint.style.display = 'block';
     }
