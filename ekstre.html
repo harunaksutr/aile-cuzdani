@@ -260,18 +260,36 @@ async function pdfYukle(file) {
   if (!file || file.type !== 'application/pdf') { log('Hata: Lütfen PDF dosyası seçin'); return; }
   log('PDF okunuyor...');
 
-  // Kategorileri yükle
+  // Kategoriler / üyeler — index.html ile aynı sorgu (RLS oturuma göre süzer; owner_id eklemek hata/boş liste üretebiliyordu)
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/categories?aktif=eq.true&order=sira.asc&owner_id=eq.${encodeURIComponent(authUserId())}`, {headers: apiHeaders()});
+    const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, { headers: apiHeaders() });
     const rows = await r.json();
-    kategoriler = rows.map((k) => k.ad);
-  } catch(e) { kategoriler = ['market','fatura','yakıt','restoran','sağlık','eğitim','diğer']; }
+    if (!r.ok) {
+      const msg = rows && rows.message ? rows.message : JSON.stringify(rows);
+      log('Kategoriler yüklenemedi: ' + msg);
+      kategoriler = [];
+    } else if (!Array.isArray(rows)) {
+      log('Kategoriler: geçersiz yanıt');
+      kategoriler = [];
+    } else {
+      kategoriler = rows.map((k) => k.ad).filter(Boolean);
+    }
+  } catch (e) {
+    log('Kategoriler: ' + (e && e.message ? e.message : e));
+    kategoriler = [];
+  }
 
-  // Üyeleri yükle
   try {
-    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc&owner_id=eq.${encodeURIComponent(authUserId())}`, {headers: apiHeaders()});
-    uyeler = await ru.json();
-  } catch(e) { uyeler = [{slug:'harun',ad:'Harun'}]; }
+    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, { headers: apiHeaders() });
+    const mrows = await ru.json();
+    if (!ru.ok || !Array.isArray(mrows)) {
+      uyeler = [{ slug: 'harun', ad: 'Harun' }];
+    } else {
+      uyeler = mrows;
+    }
+  } catch (e) {
+    uyeler = [{ slug: 'harun', ad: 'Harun' }];
+  }
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -444,7 +462,11 @@ function sonucGoster(islemler) {
     <div class="stat-item"><div class="sl">Toplam tutar</div><div class="sv">${toplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div></div>
     <div class="stat-item"><div class="sl">Taksitli</div><div class="sv">${taksitli}</div></div>`;
 
-  document.getElementById('alertBox').innerHTML = `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
+  let uyari = '';
+  if (!kategoriler.length) {
+    uyari = '<div class="alert err" style="margin-bottom:10px">Kategoriler veritabanından yüklenemedi veya liste boş. Ana uygulamada kategori ayarlarını kontrol edip sayfayı yenileyin.</div>';
+  }
+  document.getElementById('alertBox').innerHTML = uyari + `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
   tabloGoster();
   document.getElementById('previewCard').style.display = 'block';
   document.getElementById('uploadCard').style.display = 'none';
