@@ -1417,6 +1417,8 @@ const BILDIRIM_KEY = 'acuzdani_bildirim_kapat';
 const PUSH_GUNLER  = 7; // kaç gün öncesi "yaklaşan" sayılır
 /** Üst bantta gösterilecek max gecikme (gün). Daha eski vadeli satırlar (eski Trendyol vb.) bannerda çıkmaz — Taksitler sayfasında kalır. */
 const BANNER_GECIKME_MAX_GUN = 90;
+/** Üst bantta en fazla kaç satır (acil + yaklaşan); taşmayı önler */
+const BANNER_MAX_OGE = 8;
 
 async function bildirimKontrol() {
   // Bugün kapatıldıysa gösterme
@@ -1448,7 +1450,7 @@ async function bildirimKontrol() {
     const banner = document.getElementById('bildirimBanner');
     const items  = [];
 
-    urgent.forEach(t => {
+    urgent.slice(0, BANNER_MAX_OGE).forEach(t => {
       const gecti = t.son_odeme_tarihi < bugunStr;
       items.push(`<div class="bildirim-item urgent">
         <span class="bi">${gecti ? '🔴' : '🟡'}</span>
@@ -1460,7 +1462,8 @@ async function bildirimKontrol() {
       </div>`);
     });
 
-    upcoming.forEach(t => {
+    const kalanKotasi = Math.max(0, BANNER_MAX_OGE - items.length);
+    upcoming.slice(0, kalanKotasi).forEach(t => {
       const kalan = Math.ceil((new Date(t.son_odeme_tarihi) - bugun) / 86400000);
       items.push(`<div class="bildirim-item upcoming">
         <span class="bi">📅</span>
