@@ -90,6 +90,13 @@ td.mu{color:var(--muted)}
     </div>
   </div>
 
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;padding:12px 0;border-top:.5px solid var(--border);border-bottom:.5px solid var(--border)">
+    <span style="font-size:13px;color:var(--muted)">Tüm satırlarda üye:</span>
+    <select id="uyeTopluSec" class="cat-sel" aria-label="Toplu üye"></select>
+    <button type="button" class="btn" onclick="tumSatirlardaUyeUygula()">Hepsini uygula</button>
+    <span style="font-size:12px;color:var(--muted)">Listeyi tek tek değiştirmeden aynı üyeye çevirir.</span>
+  </div>
+
   <div class="tbl-ekstre-outer">
     <table id="islemTablosu" class="tbl-ekstre">
       <thead>
@@ -468,8 +475,25 @@ function sonucGoster(islemler) {
   }
   document.getElementById('alertBox').innerHTML = uyari + `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
   tabloGoster();
+  uyeTopluSecDoldur();
   document.getElementById('previewCard').style.display = 'block';
   document.getElementById('uploadCard').style.display = 'none';
+}
+
+function uyeTopluSecDoldur() {
+  const sel = document.getElementById('uyeTopluSec');
+  if (!sel || !uyeler.length) return;
+  const onceki = sel.value;
+  sel.innerHTML = uyeler.map(u => `<option value="${u.slug}">${u.ad}</option>`).join('');
+  if (onceki && uyeler.some(u => u.slug === onceki)) sel.value = onceki;
+}
+
+function tumSatirlardaUyeUygula() {
+  const sel = document.getElementById('uyeTopluSec');
+  if (!sel || !parseEdilenIslemler.length) return;
+  const slug = sel.value;
+  parseEdilenIslemler.forEach(r => { r.uye = slug; });
+  tabloGoster();
 }
 
 function tabloGoster() {
