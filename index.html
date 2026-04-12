@@ -1425,20 +1425,24 @@ function katListesiGoster(){
       <td>${k.ad}</td>
       <td><span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:${k.renk};vertical-align:middle"></span></td>
       <td style="white-space:nowrap">
-        <button type="button" class="btn" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="kategoriDuzenleAc(${JSON.stringify(k.ad)})">Düzenle</button>
+        <button type="button" class="btn" style="padding:3px 8px;font-size:11px;margin-right:6px" onclick="kategoriDuzenleSatir(${i})">Düzenle</button>
         <button type="button" class="btn dan" style="padding:3px 8px;font-size:11px" onclick="kategoriSil(${JSON.stringify(k.ad)})">Sil</button>
       </td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
-function kategoriDuzenleAc(ad){
-  const k=_kategoriler.find(x=>x.ad===ad);
-  if(!k)return;
-  document.getElementById('katEdEski').value=ad;
-  document.getElementById('katEdAd').value=ad;
+/** Satır indeksi ile aç — onclick’te gelen ad ile DB’deki Unicode farkı yüzünden find() eşleşmeyebiliyordu */
+function kategoriDuzenleSatir(i){
+  const k=_kategoriler[i];
+  if(!k){toast('Kategori bulunamadı',true);return;}
+  document.getElementById('katEdEski').value=k.ad;
+  document.getElementById('katEdAd').value=k.ad;
   const r=(k.renk||'').trim();
-  document.getElementById('katEdRenk').value=/^#[0-9A-Fa-f]{6}$/.test(r)?r:'#888780';
-  document.getElementById('katEditModal').style.display='flex';
+  const renkEl=document.getElementById('katEdRenk');
+  renkEl.value=/^#[0-9A-Fa-f]{6}$/i.test(r)?r:'#888780';
+  const modal=document.getElementById('katEditModal');
+  if(!modal){toast('Arayüz hatası',true);return;}
+  modal.style.display='flex';
 }
 function kategoriDuzenleKapat(){
   document.getElementById('katEditModal').style.display='none';
