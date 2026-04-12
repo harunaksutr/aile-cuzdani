@@ -260,6 +260,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="mg" id="mGrid"><div class="loader" style="grid-column:1/-1">Yükleniyor...</div></div>
+  <p id="dashMetrikNot" style="font-size:12px;color:var(--muted);margin:-4px 0 14px;line-height:1.5;max-width:920px"></p>
   <div class="cr">
     <div class="card">
       <div class="ct">Aylık trend</div>
@@ -990,20 +991,28 @@ async function dashboardYukle(){
     catGoster(txnAy);
     uyeGoster(txnAy);
     sonIslemGoster(txnAy.slice(0,10));
-  }catch(e){document.getElementById('mGrid').innerHTML=`<div class="loader" style="grid-column:1/-1;color:var(--red)">Hata: ${e.message}</div>`;}
+  }catch(e){
+    document.getElementById('mGrid').innerHTML=`<div class="loader" style="grid-column:1/-1;color:var(--red)">Hata: ${e.message}</div>`;
+    const ne=document.getElementById('dashMetrikNot');if(ne)ne.textContent='';
+  }
 }
 function metricGoster(txn,taksit,butce){
   const toplam=txn.reduce((s,r)=>s+Number(r.tutar),0);
+  /* Taksitler: sadece son_odeme_tarihi bu ay içinde olan bekleyen satırların tutar toplamı (aylık ödeme tutarı; Taksitler sayfasındaki "toplam kalan" değil) */
   const taksitT=taksit.reduce((s,r)=>s+Number(r.tutar),0);
   const bH=butce.find(b=>b.uye==='hepsi'&&b.kategori==='genel');
   const hedef=bH?Number(bH.hedef):0;
   const kalan=Math.max(0,hedef-toplam);
   const pct=hedef>0?Math.round(toplam/hedef*100):0;
   document.getElementById('mGrid').innerHTML=`
-    <div class="m"><div class="ml">Toplam harcama</div><div class="mv">${formatPara(toplam)}</div><div class="ms">${ayAdi(secilenAy)}</div></div>
-    <div class="m"><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
-    <div class="m"><div class="ml">Taksitler</div><div class="mv">${formatPara(taksitT)}</div><div class="ms">${taksit.length} ödeme</div></div>
-    <div class="m"><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
+    <div class="m" title="Seçili aydaki tüm işlem (harcama) kayıtlarının tutar toplamı."><div class="ml">Toplam harcama</div><div class="mv">${formatPara(toplam)}</div><div class="ms">${ayAdi(secilenAy)}</div></div>
+    <div class="m" title="Ayarlardan girilen genel aylık bütçe hedefine göre harcama yüzdesi ve hedef altında kalan tutar."><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
+    <div class="m" title="Son ödeme tarihi bu ay içinde olan bekleyen taksit satırlarının aylık tutar (tutar) toplamı. Taksitler sayfasındaki toplam kalan borç değildir."><div class="ml">Bu ay taksit (vadeler)</div><div class="mv">${formatPara(taksitT)}</div><div class="ms">${taksit.length} kayıt · vadesi bu ay</div></div>
+    <div class="m" title="Seçili ayda kayıtlı işlem adedi."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
+  const notEl=document.getElementById('dashMetrikNot');
+  if(notEl){
+    notEl.innerHTML='<strong>Özet kartlar:</strong> <strong>Toplam harcama</strong> ve <strong>işlem sayısı</strong>, üstte seçtiğin aya göre işlem tablosundan gelir. <strong>Bütçe</strong>, o ay için &quot;genel&quot; hedefe göre doluluk ve kalan tutarı gösterir. <strong>Bu ay taksit (vadeler)</strong> ise yalnızca <em>son ödeme tarihi bu ayın içine düşen</em> bekleyen taksit kayıtlarının <em>tek ödeme tutarı</em> (alan: tutar) toplamıdır — bu ay kasadan çıkması beklenen taksit ödemesi özetidir. <strong>Taksitler</strong> sayfasındaki &quot;Toplam kalan&quot; ise tüm bekleyen satırlarda (tutar × kalan taksit) ile hesaplanan <em>genel borç</em> olduğu için rakamlar farklı olabilir; bu bir hata değil, farklı tanım.';
+  }
 }
 function trendGoster(txnYil,butceAy){
   const dark=document.body.classList.contains('dark');
