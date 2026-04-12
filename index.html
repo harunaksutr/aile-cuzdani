@@ -293,9 +293,6 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
         </select>
         <select id="sfKaynak" onchange="sonIslemleriFiltrele()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
           <option value="">Tüm kaynaklar</option>
-          <option value="nakit">Nakit</option><option value="havale">Havale</option>
-          <option value="eft">EFT</option><option value="garanti">Garanti</option>
-          <option value="yapı_kredi">Yapı Kredi</option><option value="enpara">Enpara</option>
         </select>
         <input type="number" id="sfMin" placeholder="Min ₺" oninput="sonIslemleriFiltrele()" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none">
         <input type="number" id="sfMax" placeholder="Max ₺" oninput="sonIslemleriFiltrele()" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none">
@@ -322,9 +319,6 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
       </select>
       <select id="filKy" onchange="islemleriYukle()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
         <option value="">Tüm kaynaklar</option>
-        <option value="nakit">Nakit</option><option value="havale">Havale</option>
-        <option value="eft">EFT</option><option value="garanti">Garanti</option>
-        <option value="yapı_kredi">Yapı Kredi</option><option value="enpara">Enpara</option>
       </select>
       <input type="number" id="filMin" placeholder="Min ₺" oninput="islemleriYukle()" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none">
       <input type="number" id="filMax" placeholder="Max ₺" oninput="islemleriYukle()" style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none">
@@ -833,6 +827,7 @@ async function devamBootstrap() {
   aySeciciDoldur();
   await uyeleriYukle();
   await kategorileriYukle();
+  await islemKaynakFiltreleriniYukle();
   dashboardYukle();
   bildirimKontrol();
   pushDurumGoster();
@@ -956,7 +951,7 @@ function showPage(id){
   document.getElementById('mob-'+id)?.classList.add('active');
   document.getElementById('fnav-'+id)?.classList.add('active');
   if(id==='dashboard')dashboardYukle();
-  if(id==='islemler')islemleriYukle();
+  if(id==='islemler')void (async()=>{await islemKaynakFiltreleriniYukle();await islemleriYukle();})();
   if(id==='taksitler'){taksitleriYukle();kredileriYukle();}
   if(id==='butce')butceYukle();
   if(id==='ayarlar')ayarlarYukle();
@@ -990,6 +985,29 @@ async function kategorileriYukle(){
   const data=await sbGet('categories','order=sira.asc');
   _kategoriler=data.map(r=>({ad:r.ad,renk:r.renk||'#888780'}));
   ['fK','filK','sfKat'].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;const s=sel.value;sel.innerHTML=id==='fK'?'':'<option value="">Tüm kategoriler</option>';_kategoriler.forEach(k=>{const o=document.createElement('option');o.value=k.ad;o.textContent=k.ad;sel.appendChild(o);});if(s)sel.value=s;});
+}
+
+/** İşlem tablosundaki benzersiz kaynakları çeker; İşlemler ve özet «Son işlemler» kaynak filtrelerini günceller */
+const KAYNAK_FILTRE_TEMEL=['nakit','havale','eft','garanti','yapı_kredi','enpara','qnb'];
+async function islemKaynakFiltreleriniYukle(){
+  const ids=['filKy','sfKaynak'];
+  const prev={};
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)prev[id]=el.value;});
+  let fromDb=[];
+  try{
+    const rows=await sbGet('transactions','select=kaynak');
+    fromDb=[...new Set(rows.map(r=>r.kaynak).filter(Boolean))];
+  }catch(e){fromDb=[];}
+  const merged=[...new Set([...KAYNAK_FILTRE_TEMEL,...fromDb])];
+  merged.sort((a,b)=>kaynakAdi(a).localeCompare(kaynakAdi(b),'tr'));
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML='<option value="">Tüm kaynaklar</option>';
+    merged.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=kaynakAdi(k);el.appendChild(o);});
+    const p=prev[id];
+    if(p&&merged.includes(p))el.value=p;
+  });
 }
 
 // DASHBOARD
