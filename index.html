@@ -1011,7 +1011,7 @@ function metricGoster(txn,taksit,butce){
     <div class="m" title="Seçili ayda kayıtlı işlem adedi."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
   const notEl=document.getElementById('dashMetrikNot');
   if(notEl){
-    notEl.innerHTML='<strong>Özet kartlar:</strong> <strong>Toplam harcama</strong> ve <strong>işlem sayısı</strong>, üstte seçtiğin aya göre işlem tablosundan gelir. <strong>Bütçe</strong>, o ay için &quot;genel&quot; hedefe göre doluluk ve kalan tutarı gösterir. <strong>Bu ay taksit (vadeler)</strong> ise yalnızca <em>son ödeme tarihi bu ayın içine düşen</em> bekleyen taksit kayıtlarının <em>tek ödeme tutarı</em> (alan: tutar) toplamıdır — bu ay kasadan çıkması beklenen taksit ödemesi özetidir. <strong>Taksitler</strong> sayfasındaki &quot;Toplam kalan&quot; ise tüm bekleyen satırlarda (tutar × kalan taksit) ile hesaplanan <em>genel borç</em> olduğu için rakamlar farklı olabilir; bu bir hata değil, farklı tanım.';
+    notEl.innerHTML='<strong>Toplam harcama</strong> ve <strong>işlem sayısı</strong>, üstte seçtiğin aya göre işlem tablosundan gelir. <strong>Bütçe</strong>, o ay için &quot;genel&quot; hedefe göre doluluk ve kalan tutarı gösterir. <strong>Bu ay taksit (vadeler)</strong> ise yalnızca <em>son ödeme tarihi bu ayın içine düşen</em> bekleyen taksit kayıtlarının <em>tek ödeme tutarı</em> (alan: tutar) toplamıdır — bu ay kasadan çıkması beklenen taksit ödemesi özetidir. <strong>Taksitler</strong> sayfasındaki &quot;Toplam kalan&quot; ise tüm bekleyen satırlarda (tutar × kalan taksit) ile hesaplanan <em>genel borç</em> olduğu için rakamlar farklı olabilir; bu bir hata değil, farklı tanım.';
   }
 }
 function trendGoster(txnYil,butceAy){
