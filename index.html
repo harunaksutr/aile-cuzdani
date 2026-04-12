@@ -836,6 +836,21 @@ async function devamBootstrap() {
   dashboardYukle();
   bildirimKontrol();
   pushDurumGoster();
+  try {
+    const raw = sessionStorage.getItem('ac_ekstre_bildirim');
+    if (raw) {
+      sessionStorage.removeItem('ac_ekstre_bildirim');
+      const d = JSON.parse(raw);
+      const k = Number(d.kaydedilen) || 0;
+      const a = Number(d.atlandi) || 0;
+      let msg = '';
+      if (k > 0 && a > 0) msg = `Ekstre: ${k} işlem hatasız kaydedildi · ${a} tekrar atlandı`;
+      else if (k > 0) msg = `Ekstre: ${k} işlem seçtiğiniz kategorilerle hatasız kaydedildi`;
+      else if (a > 0) msg = `Ekstre: Seçilen ${a} işlem zaten kayıtlıydı`;
+      else msg = 'Ekstre işlemi tamamlandı.';
+      toast(msg);
+    }
+  } catch (e) {}
 }
 // Üyeler — Supabase members tablosundan yüklenir
 let _uyeler = [];
