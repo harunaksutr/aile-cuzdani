@@ -143,7 +143,7 @@ input[type=file]{display:none}
 <script>
 const SB_URL='https://ttsftbfzuaifheiajqbw.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
-const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members']);
+const OWNER_TABLES = new Set(['transactions','installments','loans','budgets','categories','members','ekstre_import_drafts']);
 function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
 function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
 function apiHeaders(){
@@ -164,6 +164,7 @@ const TABLOLAR = [
   {key:'budgets',      ad:'Bütçe',        ikon:'🎯'},
   {key:'categories',   ad:'Kategoriler',  ikon:'🏷️'},
   {key:'members',      ad:'Üyeler',       ikon:'👥'},
+  {key:'ekstre_import_drafts', ad:'Ekstre önizleme taslağı', ikon:'📄'},
 ];
 
 let _sayimlar = {};
@@ -172,10 +173,12 @@ let _importData = null;
 // ── YARDIMCI ──────────────────────────────────────────────
 async function sbGetAll(tablo) {
   // Supabase max 1000 satır döner, sayfalama ile hepsini çek
+  // ekstre_import_drafts: id yok, PK owner_id
+  const orderParam = tablo === 'ekstre_import_drafts' ? 'order=updated_at.desc' : 'order=id.asc';
   let tumu = [], offset = 0, limit = 1000;
   while (true) {
     const r = await fetch(
-      `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,`order=id.asc&limit=${limit}&offset=${offset}`)}`,
+      `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,`${orderParam}&limit=${limit}&offset=${offset}`)}`,
       {headers: apiHeaders()}
     );
     if (!r.ok) throw new Error(`${tablo}: ${await r.text()}`);
@@ -199,8 +202,9 @@ async function sbUpsert(tablo, rows) {
 }
 
 async function sbSayim(tablo) {
+  const sel = tablo === 'ekstre_import_drafts' ? 'select=owner_id&limit=1' : 'select=id&limit=1';
   const r = await fetch(
-    `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo,'select=id&limit=1')}`,
+    `${SB_URL}/rest/v1/${tablo}?${ownerFilter(tablo, sel)}`,
     {headers: {...apiHeaders(), 'Prefer': 'count=exact'}}
   );
   const cr = r.headers.get('content-range') || '0/0';
@@ -380,7 +384,7 @@ async function importBaslat() {
   let tamam = 0, hataSayisi = 0;
 
   // Sıra önemli: önce bağımsız tablolar, sonra bağımlılar
-  const sira = ['members','categories','budgets','loans','installments','transactions'];
+  const sira = ['members','categories','budgets','loans','installments','transactions','ekstre_import_drafts'];
   const sirali = [...sira.filter(k=>tablolar.includes(k)), ...tablolar.filter(k=>!sira.includes(k))];
 
   for (const key of sirali) {
@@ -507,7 +511,7 @@ async function temizleBaslat() {
   alert_('');
 
   // Silme sırası: bağımlı tablolar önce silinmeli
-  const silmeSirasi = ['installments','transactions','budgets','loans','categories','members'];
+  const silmeSirasi = ['installments','transactions','budgets','loans','categories','members','ekstre_import_drafts'];
   const sirali = [...silmeSirasi.filter(k => secili.find(t=>t.key===k)),
                   ...secili.filter(t => !silmeSirasi.includes(t.key)).map(t=>t.key)];
 
