@@ -58,6 +58,7 @@ td.mu{color:var(--muted)}
 <h2 id="pageTitle">Ekstre yükle</h2>
 
 <div class="card" id="uploadCard">
+  <div id="ekstreTaslakBanner" class="alert info" style="display:none;margin-bottom:14px"></div>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <label style="font-size:13px;color:var(--muted);align-self:center">Banka:</label>
     <button class="btn" id="bBtn-garanti" onclick="bankaSec('garanti')" style="border-color:var(--blue);color:var(--blue)">Garanti BBVA</button>
@@ -127,6 +128,113 @@ function apiHeaders(){
 }
 // Auth yoksa login'e yönlendir
 if(!authToken()){ location.href = 'index.html?app=1&auth=login'; }
+
+/** Sunucu tablosu: kullanıcı başına tek satır (bkz. supabase-ekstre-import-drafts.sql) */
+const EKSTRE_TASLAK_TABLO = 'ekstre_import_drafts';
+/** Eski yerel taslak anahtarı — bir kez sunucuya taşınır ve silinir */
+const LEGACY_EKSTRE_TASLAK_KEY = 'ac_ekstre_onizleme_v1';
+let _ekstreTaslakTimer = null;
+
+async function ekstreTaslakSatirYaz(islemlerArr, banka, updatedIso) {
+  const uid = authUserId();
+  if (!uid || !islemlerArr?.length) return false;
+  const payload = {
+    secili_banka: banka,
+    islemler: islemlerArr,
+    updated_at: updatedIso
+  };
+  try {
+    const q = `owner_id=eq.${encodeURIComponent(uid)}&select=owner_id`;
+    const get = await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?${q}`, { headers: apiHeaders() });
+    const rows = get.ok ? await get.json() : [];
+    if (Array.isArray(rows) && rows.length > 0) {
+      const patch = await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?owner_id=eq.${encodeURIComponent(uid)}`, {
+        method: 'PATCH',
+        headers: { ...apiHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      return patch.ok;
+    }
+    const ins = await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}`, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({ owner_id: uid, ...payload })
+    });
+    return ins.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function ekstreTaslakSunucuyaYaz() {
+  if (!parseEdilenIslemler?.length) return;
+  await ekstreTaslakSatirYaz(parseEdilenIslemler, seciliBanka, new Date().toISOString());
+}
+
+async function ekstreTaslakSunucudanOku() {
+  const uid = authUserId();
+  if (!uid) return null;
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?owner_id=eq.${encodeURIComponent(uid)}&select=secili_banka,islemler,updated_at`,
+      { headers: apiHeaders() }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    const row = rows[0];
+    const islemler = row.islemler;
+    if (!Array.isArray(islemler) || !islemler.length) return null;
+    return {
+      seciliBanka: row.secili_banka || 'garanti',
+      islemler,
+      savedAt: row.updated_at
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function ekstreTaslakSunucudanSil() {
+  const uid = authUserId();
+  if (!uid) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?owner_id=eq.${encodeURIComponent(uid)}`, {
+      method: 'DELETE',
+      headers: apiHeaders()
+    });
+  } catch (e) {}
+  try { localStorage.removeItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e2) {}
+}
+
+async function ekstreTaslakLegacyLocaldenSunucuyaTasi() {
+  let raw;
+  try { raw = localStorage.getItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e) { return null; }
+  if (!raw) return null;
+  let p;
+  try { p = JSON.parse(raw); } catch (e) { return null; }
+  if (!p.islemler?.length) {
+    try { localStorage.removeItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e2) {}
+    return null;
+  }
+  const banka = p.seciliBanka || 'garanti';
+  const iso = p.savedAt || new Date().toISOString();
+  const ok = await ekstreTaslakSatirYaz(p.islemler, banka, iso);
+  if (ok) {
+    try { localStorage.removeItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e3) {}
+    return { seciliBanka: banka, islemler: p.islemler, savedAt: iso };
+  }
+  return null;
+}
+
+function ekstreTaslakKaydetErtele() {
+  clearTimeout(_ekstreTaslakTimer);
+  _ekstreTaslakTimer = setTimeout(() => { void ekstreTaslakSunucuyaYaz(); }, 400);
+}
+
+function ekstreTaslakTemizle() {
+  void ekstreTaslakSunucudanSil();
+}
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -263,29 +371,20 @@ dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('ove
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
 dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files[0]) pdfYukle(e.dataTransfer.files[0]); });
 
-async function pdfYukle(file) {
-  if (!file || file.type !== 'application/pdf') { log('Hata: Lütfen PDF dosyası seçin'); return; }
-  log('PDF okunuyor...');
-
-  // Kategoriler / üyeler — index.html ile aynı sorgu (RLS oturuma göre süzer; owner_id eklemek hata/boş liste üretebiliyordu)
+async function ekstreKategoriUyeYukle() {
   try {
     const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, { headers: apiHeaders() });
     const rows = await r.json();
     if (!r.ok) {
-      const msg = rows && rows.message ? rows.message : JSON.stringify(rows);
-      log('Kategoriler yüklenemedi: ' + msg);
       kategoriler = [];
     } else if (!Array.isArray(rows)) {
-      log('Kategoriler: geçersiz yanıt');
       kategoriler = [];
     } else {
       kategoriler = rows.map((k) => k.ad).filter(Boolean);
     }
   } catch (e) {
-    log('Kategoriler: ' + (e && e.message ? e.message : e));
     kategoriler = [];
   }
-
   try {
     const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, { headers: apiHeaders() });
     const mrows = await ru.json();
@@ -297,6 +396,12 @@ async function pdfYukle(file) {
   } catch (e) {
     uyeler = [{ slug: 'harun', ad: 'Harun' }];
   }
+}
+
+async function pdfYukle(file) {
+  if (!file || file.type !== 'application/pdf') { log('Hata: Lütfen PDF dosyası seçin'); return; }
+  log('PDF okunuyor...');
+  await ekstreKategoriUyeYukle();
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -449,7 +554,7 @@ function parseEtEnpara(metin) {
   sonucGoster(islemler);
 }
 
-function sonucGoster(islemler) {
+function sonucGoster(islemler, opts) {
   parseEdilenIslemler = islemler;
   log('');
 
@@ -473,7 +578,10 @@ function sonucGoster(islemler) {
   if (!kategoriler.length) {
     uyari = '<div class="alert err" style="margin-bottom:10px">Kategoriler veritabanından yüklenemedi veya liste boş. Ana uygulamada kategori ayarlarını kontrol edip sayfayı yenileyin.</div>';
   }
-  document.getElementById('alertBox').innerHTML = uyari + `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
+  const taslakBlok = (opts && opts.taslakGeri)
+    ? '<div class="alert info" style="margin-bottom:10px">Kaydedilmemiş önizlemeniz geri yüklendi. Kategori ve üye seçimleri hesabınıza kaydedilir.</div>'
+    : '';
+  document.getElementById('alertBox').innerHTML = uyari + taslakBlok + `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
   tabloGoster();
   uyeTopluSecDoldur();
   document.getElementById('previewCard').style.display = 'block';
@@ -494,33 +602,36 @@ function tumSatirlardaUyeUygula() {
   const slug = sel.value;
   parseEdilenIslemler.forEach(r => { r.uye = slug; });
   tabloGoster();
+  void ekstreTaslakSunucuyaYaz();
 }
 
 function tabloGoster() {
   const tbody = document.getElementById('islemBody');
   tbody.innerHTML = parseEdilenIslemler.map((r, i) => `
     <tr>
-      <td><input type="checkbox" class="chk" ${r.secili?'checked':''} onchange="parseEdilenIslemler[${i}].secili=this.checked"></td>
+      <td><input type="checkbox" class="chk" ${r.secili?'checked':''} onchange="parseEdilenIslemler[${i}].secili=this.checked;ekstreTaslakKaydetErtele()"></td>
       <td class="mu">${r.tarih}</td>
       <td>${r.aciklama}${r.toplam_taksit>1?` <span style="font-size:11px;color:var(--muted)">(${r.taksit_no}/${r.toplam_taksit})</span>`:''}</td>
       <td>${r.toplam_taksit>1?'<span class="badge taksit">Taksitli</span>':'<span class="badge normal">Normal</span>'}</td>
       <td>
-        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].kategori=this.value">
+        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].kategori=this.value;ekstreTaslakKaydetErtele()">
           ${kategoriler.map(k=>`<option value="${k}" ${k===r.kategori?'selected':''}>${k}</option>`).join('')}
         </select>
       </td>
       <td>
-        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value">
+        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value;ekstreTaslakKaydetErtele()">
           ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
         </select>
       </td>
       <td class="amt">${r.tutar.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
     </tr>`).join('');
+  ekstreTaslakKaydetErtele();
 }
 
 function tumunuSec(secili) {
   parseEdilenIslemler.forEach(r => r.secili = secili);
   document.querySelectorAll('#islemBody .chk').forEach(c => c.checked = secili);
+  ekstreTaslakKaydetErtele();
 }
 
 async function kaydet() {
@@ -606,6 +717,7 @@ async function kaydet() {
   try {
     sessionStorage.setItem('ac_ekstre_bildirim', JSON.stringify({ kaydedilen: basarili, atlandi: atlandi }));
   } catch (e) {}
+  ekstreTaslakTemizle();
 
   setTimeout(() => { location.href = 'index.html?app=1'; }, 900);
 }
@@ -692,13 +804,58 @@ function parseEtQnb(metin) {
 
 function sifirla() {
   parseEdilenIslemler = [];
+  ekstreTaslakTemizle();
   document.getElementById('previewCard').style.display = 'none';
   document.getElementById('uploadCard').style.display = 'block';
   document.getElementById('fileInput').value = '';
   log('');
 }
 
+function ekstreTaslakKaldir() {
+  ekstreTaslakTemizle();
+  const b = document.getElementById('ekstreTaslakBanner');
+  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
+}
+
+function ekstreTaslakPayloadUygula(p, opts) {
+  if (!p?.islemler?.length) return;
+  parseEdilenIslemler = p.islemler;
+  if (p.seciliBanka) bankaSec(p.seciliBanka);
+  parseEdilenIslemler.forEach(r => {
+    if (kategoriler.length && r.kategori && !kategoriler.includes(r.kategori)) {
+      r.kategori = kategoriler[0];
+    }
+    if (uyeler.length && r.uye && !uyeler.some(u => u.slug === r.uye)) {
+      r.uye = uyeler[0].slug;
+    }
+  });
+  const taslakGeri = !!(opts && opts.fromSayfaYukle);
+  sonucGoster(parseEdilenIslemler, taslakGeri ? { taslakGeri: true } : undefined);
+  const b = document.getElementById('ekstreTaslakBanner');
+  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
+}
+
+async function ekstreTaslakGeriYukle(opts) {
+  let p = opts && opts.payload;
+  if (!p) p = await ekstreTaslakSunucudanOku();
+  if (!p?.islemler?.length) {
+    p = await ekstreTaslakLegacyLocaldenSunucuyaTasi();
+  }
+  ekstreTaslakPayloadUygula(p, opts);
+}
+
+async function ekstreSayfaTaslakKontrol() {
+  await ekstreKategoriUyeYukle();
+  let p = await ekstreTaslakSunucudanOku();
+  if (!p?.islemler?.length) {
+    p = await ekstreTaslakLegacyLocaldenSunucuyaTasi();
+  }
+  if (!p?.islemler?.length) return;
+  ekstreTaslakPayloadUygula(p, { fromSayfaYukle: true });
+}
+
 bankaSec(seciliBanka);
+void ekstreSayfaTaslakKontrol();
 </script>
 </body>
 </html>
