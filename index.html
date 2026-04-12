@@ -42,7 +42,8 @@ nav:not(.footer-nav) a.active{border-bottom-color:var(--blue)}
 select.ay-sel{font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:5px 10px;color:var(--text)}
 main{max-width:1100px;margin:0 auto;padding:20px 16px}
 .page{display:none}.page.active{display:block}
-.mg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.mg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
+@media(max-width:1100px){.mg{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .m{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:14px 16px}
 .ml{font-size:12px;color:var(--muted);margin-bottom:4px}.mv{font-size:20px;font-weight:500}
 .ms{font-size:12px;color:var(--muted);margin-top:3px}.ms.danger{color:var(--red)}.ms.success{color:var(--green)}
@@ -997,21 +998,23 @@ async function dashboardYukle(){
   }
 }
 function metricGoster(txn,taksit,butce){
-  const toplam=txn.reduce((s,r)=>s+Number(r.tutar),0);
-  /* Taksitler: sadece son_odeme_tarihi bu ay içinde olan bekleyen satırların tutar toplamı (aylık ödeme tutarı; Taksitler sayfasındaki "toplam kalan" değil) */
+  const toplamBuAy=txn.reduce((s,r)=>s+Number(r.tutar),0);
+  const harcamaTaksitHaric=txn.filter(r=>r.kategori!=='taksit').reduce((s,r)=>s+Number(r.tutar),0);
+  /* Taksitler: sadece son_odeme_tarihi bu ay içinde olan bekleyen satırların tutar toplamı */
   const taksitT=taksit.reduce((s,r)=>s+Number(r.tutar),0);
   const bH=butce.find(b=>b.uye==='hepsi'&&b.kategori==='genel');
   const hedef=bH?Number(bH.hedef):0;
-  const kalan=Math.max(0,hedef-toplam);
-  const pct=hedef>0?Math.round(toplam/hedef*100):0;
+  const kalan=Math.max(0,hedef-harcamaTaksitHaric);
+  const pct=hedef>0?Math.round(harcamaTaksitHaric/hedef*100):0;
   document.getElementById('mGrid').innerHTML=`
-    <div class="m" title="Seçili aydaki tüm işlem (harcama) kayıtlarının tutar toplamı."><div class="ml">Toplam harcama</div><div class="mv">${formatPara(toplam)}</div><div class="ms">${ayAdi(secilenAy)}</div></div>
-    <div class="m" title="Ayarlardan girilen genel aylık bütçe hedefine göre harcama yüzdesi ve hedef altında kalan tutar."><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
-    <div class="m" title="Son ödeme tarihi bu ay içinde olan bekleyen taksit satırlarının aylık tutar (tutar) toplamı. Taksitler sayfasındaki toplam kalan borç değildir."><div class="ml">Bu ay taksit (vadeler)</div><div class="mv">${formatPara(taksitT)}</div><div class="ms">${taksit.length} kayıt · vadesi bu ay</div></div>
-    <div class="m" title="Seçili ayda kayıtlı işlem adedi."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
+    <div class="m" title="Kategori &quot;taksit&quot; olan işlemler hariç, bu ayki harcama toplamı. Bütçe karşılaştırması buna göre."><div class="ml">Harcama (taksit hariç)</div><div class="mv">${formatPara(harcamaTaksitHaric)}</div><div class="ms">${ayAdi(secilenAy)}</div></div>
+    <div class="m" title="Bu ayki tüm işlem kayıtları; taksit ödemeleri (kategori: taksit) dahil."><div class="ml">Bu ay toplam harcama</div><div class="mv">${formatPara(toplamBuAy)}</div><div class="ms">${ayAdi(secilenAy)} · tüm işlemler</div></div>
+    <div class="m" title="Genel aylık bütçe, taksit hariç harcamaya göre doluluk ve kalan."><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
+    <div class="m" title="Son ödeme tarihi bu ay içinde olan bekleyen taksit satırlarının tutar toplamı (Taksitler sayfasındaki toplam kalan borç değildir)."><div class="ml">Bu ay taksit (vadeler)</div><div class="mv">${formatPara(taksitT)}</div><div class="ms">${taksit.length} kayıt · vadesi bu ay</div></div>
+    <div class="m" title="Seçili ayda kayıtlı işlem adedi (taksit ödemeleri dahil)."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
   const notEl=document.getElementById('dashMetrikNot');
   if(notEl){
-    notEl.innerHTML='<strong>Toplam harcama</strong> ve <strong>işlem sayısı</strong>, üstte seçtiğin aya göre işlem tablosundan gelir. <strong>Bütçe</strong>, o ay için &quot;genel&quot; hedefe göre doluluk ve kalan tutarı gösterir. <strong>Bu ay taksit (vadeler)</strong> ise yalnızca <em>son ödeme tarihi bu ayın içine düşen</em> bekleyen taksit kayıtlarının <em>tek ödeme tutarı</em> (alan: tutar) toplamıdır — bu ay kasadan çıkması beklenen taksit ödemesi özetidir. <strong>Taksitler</strong> sayfasındaki &quot;Toplam kalan&quot; ise tüm bekleyen satırlarda (tutar × kalan taksit) ile hesaplanan <em>genel borç</em> olduğu için rakamlar farklı olabilir; bu bir hata değil, farklı tanım.';
+    notEl.innerHTML='<strong>Harcama (taksit hariç)</strong>, o ay işlemlerinden kategori alanı &quot;taksit&quot; olanları (karttan taksit ödeme kayıtları) çıkarır; <strong>bütçe</strong> bu tutara göre hesaplanır. <strong>Bu ay toplam harcama</strong> tüm işlemlerin toplamıdır. <strong>Bu ay taksit (vadeler)</strong>, vadesi bu ay olan <em>bekleyen taksit</em> satırlarının tutar toplamıdır (Taksitler sayfasındaki &quot;Toplam kalan&quot; farklı tanımdır).';
   }
 }
 function trendGoster(txnYil,butceAy){
