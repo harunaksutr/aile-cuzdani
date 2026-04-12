@@ -131,6 +131,31 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
   table{min-width:320px;font-size:12px}
   th,td{padding:7px 6px}
   .mv{font-size:17px}
+  /* İşlemler — dar ekranda taşmayı kes, tablo yatay kayar */
+  #page-islemler .card{min-width:0;max-width:100%}
+  #page-islemler .tbl-wrap{
+    width:100%;
+    max-width:100%;
+    margin-left:0;
+    margin-right:0;
+    -webkit-overflow-scrolling:touch;
+  }
+  .islem-filtre-grid{grid-template-columns:1fr !important}
+  .islem-toolbar{flex-direction:column !important;align-items:stretch !important;gap:8px !important}
+  .islem-toolbar > div:last-child{text-align:left !important}
+  .islem-toolbar-hint{display:none !important}
+  table.tbl-islemler{
+    min-width:540px;
+    table-layout:auto;
+  }
+  table.tbl-islemler td:nth-child(3){
+    max-width:min(148px,40vw);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  table.tbl-islemler .amt{font-size:12px}
+  table.tbl-islemler th:nth-child(7),table.tbl-islemler td:nth-child(7){white-space:nowrap}
 }
 </style>
 </head>
@@ -309,7 +334,7 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <!-- İŞLEMLER -->
 <div class="page" id="page-islemler">
   <div class="card" style="margin-bottom:12px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div class="islem-filtre-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="text" id="filAra" placeholder="Açıklama ara..." oninput="islemleriYukle()" style="grid-column:1/-1;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;color:var(--text);outline:none">
       <select id="filU" onchange="islemleriYukle()" style="font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
         <option value="">Yükleniyor...</option>
@@ -1141,15 +1166,15 @@ async function islemleriYukle(){
     if(!data.length){document.getElementById('islemT').innerHTML='<div class="loader">Sonuç yok</div>';return;}
     const toplam=data.reduce((s,r)=>s+Number(r.tutar),0);
     document.getElementById('islemT').innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div class="islem-toolbar" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
           <button type="button" class="btn dan" id="islemTopluSilBtn" disabled style="font-size:12px;padding:5px 12px" onclick="islemSecilenleriSil()">Seçilenleri sil</button>
           <button type="button" class="btn" style="font-size:12px;padding:5px 12px" onclick="islemTumunuIsaretle(false)">İşareti kaldır</button>
-          <span style="font-size:12px;color:var(--muted)">Satır veya sütun başlığındaki kutuyla çoklu seçim.</span>
+          <span class="islem-toolbar-hint" style="font-size:12px;color:var(--muted)">Satır veya sütun başlığındaki kutuyla çoklu seçim.</span>
         </div>
         <div style="text-align:right"><span style="font-size:12px;color:var(--muted)">${data.length} işlem</span> · <span style="font-weight:500">${formatPara(toplam)}</span></div>
       </div>
-      <table><thead><tr><th style="width:40px"><input type="checkbox" id="islemChkAll" title="Tümünü işaretle" onchange="islemTumunuIsaretle(this.checked)"></th><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
+      <table class="tbl-islemler"><thead><tr><th style="width:36px"><input type="checkbox" id="islemChkAll" title="Tümünü işaretle" onchange="islemTumunuIsaretle(this.checked)"></th><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th style="width:52px"></th></tr></thead>
       <tbody>${data.map(r=>`<tr class="tr-h"><td><input type="checkbox" class="islem-chk" data-id="${r.id}" onchange="islemSatirChkDegisti()"></td><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${r.aciklama}</td><td class="mu hide-mob">${r.kategori}</td><td class="mu hide-mob">${UYE_ADI[r.uye]||r.uye}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${kaynakAdi(r.kaynak)}</span></td><td class="amt">${formatPara(r.tutar)}</td><td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`).join('')}</tbody></table>`;
     islemSatirChkDegisti();
   }catch(e){document.getElementById('islemT').innerHTML=`<div class="loader" style="color:var(--red)">Hata: ${e.message}</div>`;}
