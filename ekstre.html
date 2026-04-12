@@ -516,10 +516,11 @@ async function kaydet() {
         { headers: apiHeaders() }
       );
       const mevcut = await kontrol.json();
+      if (!kontrol.ok || !Array.isArray(mevcut)) { hata++; continue; }
       if (mevcut.length > 0) { atlandi++; continue; }
 
       // Transactions'a ekle
-      await fetch(`${SB_URL}/rest/v1/transactions`, {
+      const ins = await fetch(`${SB_URL}/rest/v1/transactions`, {
         method: 'POST', headers: apiHeaders(),
         body: JSON.stringify({
           tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
@@ -530,6 +531,7 @@ async function kaydet() {
 
       // NOT: Ekstre = geçmiş hareket; taksit satırları için installments eklenmez.
       // Aksi halde son_odeme geçmişe düşer ve tümü "Gecikmiş" bildirimi üretirdi.
+      if (!ins.ok) { hata++; continue; }
       basarili++;
     } catch(e) { hata++; }
   }
@@ -542,9 +544,33 @@ async function kaydet() {
   if (atlandi  > 0) mesajlar.push(`${atlandi} tekrar atlandı`);
   if (hata     > 0) mesajlar.push(`${hata} hata`);
 
-  document.getElementById('alertBox').innerHTML = basarili > 0 || atlandi > 0
-    ? `<div class="alert suc">${mesajlar.join(' · ')} <a href="index.html?app=1" style="color:var(--green);font-weight:500">Dashboard'a git →</a></div>`
-    : `<div class="alert err">Kayıt başarısız. Bağlantıyı kontrol edin.</div>`;
+  const tamamHatasiz = hata === 0 && (basarili > 0 || atlandi > 0);
+
+  if (hata > 0) {
+    document.getElementById('alertBox').innerHTML = basarili > 0 || atlandi > 0
+      ? `<div class="alert err">${mesajlar.join(' · ')} · Bazı kayıtlar eklenemedi.</div>`
+      : `<div class="alert err">${mesajlar.length ? mesajlar.join(' · ') : 'Kayıt başarısız.'} Bağlantıyı kontrol edin.</div>`;
+    return;
+  }
+
+  if (!tamamHatasiz) {
+    document.getElementById('alertBox').innerHTML = `<div class="alert err">Kayıt başarısız. Bağlantıyı kontrol edin.</div>`;
+    return;
+  }
+
+  const ozet = basarili > 0
+    ? (atlandi > 0
+      ? `${basarili} işlem kategori ve üye bilgileriyle hatasız kaydedildi; ${atlandi} kayıt zaten vardı.`
+      : `Seçtiğiniz ${basarili} işlem kategori ve üye bilgileriyle hatasız kaydedildi.`)
+    : `Seçilen ${atlandi} işlem zaten kayıtlıydı (yinelenen kayıt oluşmadı).`;
+
+  document.getElementById('alertBox').innerHTML = `<div class="alert suc">${ozet} Ana sayfaya yönlendiriliyorsunuz…</div>`;
+
+  try {
+    sessionStorage.setItem('ac_ekstre_bildirim', JSON.stringify({ kaydedilen: basarili, atlandi: atlandi }));
+  } catch (e) {}
+
+  setTimeout(() => { location.href = 'index.html?app=1'; }, 900);
 }
 
 function parseEtQnb(metin) {
