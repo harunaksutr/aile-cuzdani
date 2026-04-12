@@ -955,6 +955,21 @@ function aySeciciDoldur(){
 function ayDegisti(){secilenAy=document.getElementById('ayS').value;const a=document.querySelector('.page.active').id.replace('page-','');showPage(a);}
 
 // KATEGORİLER
+/** Yeni kategoride sırayla kullanılır; mevcut renklerle çakışmayan ilk değer seçilir */
+const KATEGORI_RENK_PALETI = [
+  '#378ADD','#1D9E75','#EF9F27','#D85A30','#7F77DD','#E24B4A',
+  '#0891B2','#CA8A04','#DB2777','#4F46E5','#059669','#B45309',
+  '#7C3AED','#BE123C','#0D9488','#65A30D','#C026D3','#EA580C','#2563EB',
+  '#16A34A','#D97706','#9333EA','#DC2626','#0E7490','#4D7C0F'
+];
+function kategoriSonrakiOtomatikRenk(){
+  const kullanilan=new Set((_kategoriler||[]).map(k=>(k.renk||'').trim().toLowerCase()).filter(Boolean));
+  for(const hex of KATEGORI_RENK_PALETI){
+    if(!kullanilan.has(hex.toLowerCase()))return hex;
+  }
+  return KATEGORI_RENK_PALETI[(_kategoriler||[]).length%KATEGORI_RENK_PALETI.length];
+}
+
 async function kategorileriYukle(){
   const data=await sbGet('categories','order=sira.asc');
   _kategoriler=data.map(r=>({ad:r.ad,renk:r.renk||'#888780'}));
@@ -1465,7 +1480,7 @@ async function kategoriDuzenleKaydet(){
     katListesiGoster();
   }catch(e){toast('Hata: '+e.message,true);}
 }
-async function kategoriEkle(){const ad=document.getElementById('yKat').value.trim().toLowerCase();if(!ad){toast('Kategori adı girin',true);return;}try{await sbPost('categories',withOwner({ad,renk:'#888780',sira:_kategoriler.length+1}));toast('Kategori eklendi: '+ad);document.getElementById('yKat').value='';await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
+async function kategoriEkle(){const ad=document.getElementById('yKat').value.trim().toLowerCase();if(!ad){toast('Kategori adı girin',true);return;}const renk=kategoriSonrakiOtomatikRenk();try{await sbPost('categories',withOwner({ad,renk,sira:_kategoriler.length+1}));toast('Kategori eklendi: '+ad);document.getElementById('yKat').value='';await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
 async function kategoriSil(ad){if(!confirm(`"${ad}" silinsin mi?`))return;try{await sbDelete('categories',`ad=eq.${encodeURIComponent(ad)}`);toast('Silindi');await kategorileriYukle();katListesiGoster();}catch(e){toast('Hata: '+e.message,true);}}
 
 
