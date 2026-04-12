@@ -1200,17 +1200,32 @@ async function islemEkle(){
 }
 
 // TAKSİTLER
+/** Ekstre PDF ile işleme alınan kart taksitleri transactions’ta tutulur; installments ile birlikte listelenir */
+const TAKSIT_EKSTRE_KAYNAK=['garanti','enpara','yapı_kredi','qnb'];
 function taksitFormuToggle(){const f=document.getElementById('taksitForm'),i=document.getElementById('tFormIkon'),a=f.style.display==='block';f.style.display=a?'none':'block';i.textContent=a?'+':'−';}
 function taksitOnizle(){const t=parseFloat(document.getElementById('tT')?.value)||0,k=parseInt(document.getElementById('tKa')?.value)||0,o=document.getElementById('tOnizle');if(t>0&&k>0){o.style.display='block';document.getElementById('tOnizleTutar').textContent=formatPara(t*k);}else{o.style.display='none';}}
 async function taksitleriYukle(){
   document.getElementById('taksitL').innerHTML='<div class="loader">Yükleniyor...</div>';
   try{
-    let q='durum=eq.bekliyor&order=son_odeme_tarihi.asc&select=*,loan_id,taksit_no';
+    const q='durum=eq.bekliyor&order=son_odeme_tarihi.asc&select=*,loan_id,taksit_no';
     const fk=document.getElementById('tFilKaynak')?.value||'';
     const fu=document.getElementById('tFilUye')?.value||'';
-    if(fk)q+=`&kaynak=eq.${encodeURIComponent(fk)}`;
-    if(fu)q+=`&uye=eq.${encodeURIComponent(fu)}`;
-    const data=await sbGet('installments',q);
+    let data=await sbGet('installments',q);
+    const oid=localStorage.getItem('ac_user_id');
+    if(oid){
+      try{
+        const txs=await sbGet('transactions',`owner_id=eq.${encodeURIComponent(oid)}&select=id,aciklama,tutar,kaynak,uye,toplam_taksit,taksit_no,kalan_taksit,tarih`);
+        const ekstreTx=txs.filter(r=>TAKSIT_EKSTRE_KAYNAK.includes(r.kaynak)&&Number(r.toplam_taksit)>1).map(r=>({
+          id:r.id,_src:'tx',aciklama:r.aciklama,tutar:r.tutar,kaynak:r.kaynak,uye:r.uye,
+          toplam_taksit:Number(r.toplam_taksit)||1,kalan_taksit:Number(r.kalan_taksit)||1,taksit_no:r.taksit_no,
+          son_odeme_tarihi:r.tarih,loan_id:null,durum:'bekliyor'
+        }));
+        data=[...data,...ekstreTx];
+        data.sort((a,b)=>String(a.son_odeme_tarihi||'').localeCompare(String(b.son_odeme_tarihi||'')));
+      }catch(_){/* transactions’ta taksit sütunları yoksa — yalnızca installments */}
+    }
+    if(fk)data=data.filter(t=>t.kaynak===fk);
+    if(fu)data=data.filter(t=>t.uye===fu);
     const toplamAylik=data.reduce((s,r)=>s+Number(r.tutar),0);
     const toplamKalan=data.reduce((s,r)=>s+Number(r.tutar)*Number(r.kalan_taksit),0);
     document.getElementById('taksitOzet').innerHTML=`
@@ -1243,10 +1258,10 @@ async function taksitleriYukle(){
             <div style="text-align:right;flex-shrink:0">
               <div style="font-weight:500">${formatPara(t.tutar)}<span style="font-size:11px;font-weight:400;color:var(--muted)">/ay</span></div>
               <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${t.kalan_taksit} kaldı · ${formatPara(kt)}</div>
-              ${(()=>{const ekstre=['garanti','enpara','yapı_kredi','qnb'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;const kredi=!!t.loan_id;if(kredi)return`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`;if(ekstre)return`<div style="font-size:10px;color:var(--amber);margin-bottom:4px">📄 Ekstre ile izleniyor</div>`;return '';})()}
+              ${(()=>{const ekstre=['garanti','enpara','yapı_kredi','qnb'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;const kredi=!!t.loan_id;if(kredi)return`<div style="font-size:10px;color:var(--green);margin-bottom:4px">✓ Kredi taksiti${t.taksit_no?` · ${t.taksit_no}/${t.toplam_taksit}`:''}</div>`;if(ekstre)return`<div style="font-size:10px;color:var(--amber);margin-bottom:4px">📄 Ekstre ile izleniyor${t._src==='tx'?' (işlem)':''}</div>`;return '';})()}
               <div style="display:flex;gap:4px;justify-content:flex-end">
                 ${(()=>{const ekstre=['garanti','enpara','yapı_kredi','qnb'].includes(t.kaynak)&&Number(t.toplam_taksit)>1&&!t.loan_id;return ekstre?`<button class="btn" style="padding:3px 8px;font-size:11px;opacity:.45;cursor:default" disabled title="Ekstre yüklendiğinde otomatik güncellenir">Ekstre</button>`:`<button class="btn" style="padding:3px 8px;font-size:11px" onclick="taksitOdemeModal('${t.id}')">Ödendi</button>`;})()}
-                <button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="taksitSil('${t.id}')">Sil</button>
+                <button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="taksitSil('${t.id}','${t._src==='tx'?'tx':'in'}')">Sil</button>
               </div>
             </div>
           </div>`;
@@ -1297,7 +1312,14 @@ async function taksitOdendi(id,odemeYontemi){
     taksitleriYukle();
   }catch(e){toast('Hata: '+e.message,true);}
 }
-async function taksitSil(id){if(!confirm('Silmek istediğinize emin misiniz?'))return;try{await sbDelete('installments',`id=eq.${id}`);toast('Taksit silindi');taksitleriYukle();}catch(e){toast('Hata: '+e.message,true);}}
+async function taksitSil(id,src){
+  if(!confirm('Silmek istediğinize emin misiniz?'))return;
+  try{
+    if(src==='tx'){await sbDelete('transactions',`id=eq.${encodeURIComponent(id)}`);toast('İşlem silindi');}
+    else{await sbDelete('installments',`id=eq.${id}`);toast('Taksit silindi');}
+    taksitleriYukle();
+  }catch(e){toast('Hata: '+e.message,true);}
+}
 
 // KREDİLER
 const TUR_ADI={konut:'Konut Kredisi',tasit:'Taşıt Kredisi',ihtiyac:'İhtiyaç Kredisi'};
