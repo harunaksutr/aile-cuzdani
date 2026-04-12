@@ -541,7 +541,20 @@ async function kaydet() {
       );
       const mevcut = await kontrol.json();
       if (!kontrol.ok || !Array.isArray(mevcut)) { hata++; continue; }
-      if (mevcut.length > 0) { atlandi++; continue; }
+      if (mevcut.length > 0) {
+        try {
+          await fetch(`${SB_URL}/rest/v1/transactions?id=eq.${encodeURIComponent(mevcut[0].id)}`, {
+            method: 'PATCH', headers: apiHeaders(),
+            body: JSON.stringify({
+              toplam_taksit: r.toplam_taksit != null ? r.toplam_taksit : 1,
+              taksit_no: r.taksit_no != null ? r.taksit_no : 1,
+              kalan_taksit: r.kalan_taksit != null ? r.kalan_taksit : 1
+            })
+          });
+        } catch (e) {}
+        atlandi++;
+        continue;
+      }
 
       // Transactions'a ekle (taksitli satırlar: toplam_taksit/taksit_no/kalan_taksit — Taksitler sayfasında gösterilir; installments tablosuna yazılmaz)
       const ins = await fetch(`${SB_URL}/rest/v1/transactions`, {
