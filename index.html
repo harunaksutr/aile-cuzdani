@@ -903,6 +903,14 @@ const KAYNAK_ADI={nakit:'Nakit',havale:'Havale',eft:'EFT',garanti:'Garanti',yap�
 const KAYNAK_CLS={nakit:'nakit',havale:'eft',eft:'eft',garanti:'cc',yapı_kredi:'cc',enpara:'eft',qnb:'cc'};
 function kaynakClass(k){return KAYNAK_CLS[k]||(k?.startsWith('havale')?'eft':k?.startsWith('eft')?'eft':'nakit');}
 function kaynakAdi(k){return KAYNAK_ADI[k]||k;}
+/** Filtrede «Havale» veya «EFT» seçildiğinde DB’deki havale_garanti, eft_garanti vb. bileşik kaynakları da kapsar */
+function kaynakSecimineUygun(secilen,kayitKaynak){
+  if(!secilen)return true;
+  const k=kayitKaynak==null?'':String(kayitKaynak);
+  if(secilen==='havale')return k==='havale'||k.startsWith('havale_');
+  if(secilen==='eft')return k==='eft'||k.startsWith('eft_');
+  return k===secilen;
+}
 
 let secilenAy=bugunAy(),_kategoriler=[],trendC,catC,uyeC;
 
@@ -1101,7 +1109,7 @@ function sonIslemleriFiltrele(){
     if(ara&&!r.aciklama.toLowerCase().includes(ara))return false;
     if(uye&&r.uye!==uye)return false;
     if(kat&&r.kategori!==kat)return false;
-    if(kaynak&&r.kaynak!==kaynak)return false;
+    if(kaynak&&!kaynakSecimineUygun(kaynak,r.kaynak))return false;
     if(Number(r.tutar)<min)return false;
     if(Number(r.tutar)>max)return false;
     return true;
@@ -1124,8 +1132,9 @@ async function islemleriYukle(){
     const max=parseFloat(document.getElementById('filMax')?.value)||Infinity;
     if(u)q+=`&uye=eq.${encodeURIComponent(u)}`;
     if(k)q+=`&kategori=eq.${encodeURIComponent(k)}`;
-    if(ky)q+=`&kaynak=eq.${encodeURIComponent(ky)}`;
+    if(ky&&ky!=='havale'&&ky!=='eft')q+=`&kaynak=eq.${encodeURIComponent(ky)}`;
     let data=await sbGet('transactions',q);
+    if(ky&&(ky==='havale'||ky==='eft'))data=data.filter(r=>kaynakSecimineUygun(ky,r.kaynak));
     if(ara)data=data.filter(r=>r.aciklama.toLowerCase().includes(ara));
     if(min)data=data.filter(r=>Number(r.tutar)>=min);
     if(max<Infinity)data=data.filter(r=>Number(r.tutar)<=max);
