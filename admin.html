@@ -15,6 +15,8 @@ h2{font-size:18px;font-weight:500;margin-bottom:4px}
 .ct{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer;transition:background .15s;text-decoration:none}
 .btn:hover{background:var(--bg)}.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.pri:hover{opacity:.9}
+.btn.suc{background:var(--green);color:#fff;border-color:var(--green)}.btn.suc:hover{opacity:.9}
+.btn.dan{color:var(--red);border-color:rgba(226,75,74,.35)}.btn.dan:hover{background:rgba(226,75,74,.08)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
 .back-btn:hover{color:var(--text)}
@@ -45,7 +47,7 @@ select{font-size:13px;background:var(--bg);border:.5px solid var(--border);borde
 
 <a class="back-btn" href="index.html?app=1">← Uygulamaya dön</a>
 <h2>Kullanıcı yönetimi</h2>
-<p class="sub">Kayıtlı hesapları listele ve rol ataması yap. Tam silme işlemi yalnızca Supabase panosundan yapılabilir.</p>
+<p class="sub">Kayıtlı hesapları listele ve rol ata. Tam veritabanı yedek/geri yükleme aşağıdadır. Kimlik (Authentication) hesapları Supabase panelinden yönetilir.</p>
 
 <div id="alertBox"></div>
 <div id="mainArea"><div class="loader">Oturum kontrol ediliyor…</div></div>
@@ -148,10 +150,30 @@ async function baslat() {
     const tumuRaw = await sbRegistry('?select=id,email,role,created_at&order=created_at.desc&limit=500', { method: 'GET' });
     const tumu = Array.isArray(tumuRaw) ? tumuRaw : [];
     alertBox(
-      "Tam kullanıcı silmek veya şifre sıfırlamak için Supabase panelinde Authentication → Users bölümünü kullan.",
+      "Tam kullanıcı silmek veya şifre sıfırlamak için Supabase panelinde Authentication → Users bölümünü kullanın. Yedek/geri yükleme için <code style=font-size:12px>supabase-admin-database-backup-restore.sql</code> dosyasını çalıştırın.",
       'warn'
     );
     area.innerHTML = `
+      <div class="card">
+        <div class="ct">Veritabanı — tam yedek &amp; geri yükle</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px">
+          Tüm kullanıcıların <strong>uygulama verisini</strong> içerir: <code style=font-size:12px>app_user_registry</code>,
+          işlemler, taksitler, krediler, bütçe, kategoriler, üyeler, ekstre taslağı.
+          <strong>auth.users</strong> (giriş hesapları) bu dosyada yoktur; geri yükleme sadece public tabloları değiştirir.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+          <button type="button" class="btn suc" id="adminTamYedekBtn">⬇ Tam yedek indir</button>
+        </div>
+        <div style="border-top:.5px solid var(--border);padding-top:14px;margin-top:4px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Geri yükleme mevcut uygulama tablolarının üzerine yazar. Önce yedek alın.</p>
+          <input type="file" id="adminRestoreFile" accept=".json,application/json" style="display:none">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <button type="button" class="btn" id="adminRestorePick">JSON dosyası seç…</button>
+            <span id="adminRestoreLabel" style="font-size:12px;color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+            <button type="button" class="btn dan" id="adminGeriYukleBtn">Geri yükle</button>
+          </div>
+        </div>
+      </div>
       <div class="card">
         <div class="ct">Kayıtlı kullanıcılar (${tumu.length})</div>
         <div class="tbl-wrap">
@@ -227,7 +249,113 @@ window.kopyala = async function (id) {
   }
 };
 
+function rpcSonucCoz(data, fnAdi) {
+  if (data == null) return null;
+  if (typeof data === 'object' && !Array.isArray(data) && data.meta && data.data) return data;
+  if (Array.isArray(data) && data.length) {
+    const row = data[0];
+    if (row && typeof row === 'object' && fnAdi in row) return row[fnAdi];
+    const keys = Object.keys(row);
+    if (keys.length === 1) return row[keys[0]];
+    return row;
+  }
+  return data;
+}
+
+async function adminRpc(fnAdi, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fnAdi}`, {
+    method: 'POST',
+    headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body == null ? {} : body)
+  });
+  const text = await r.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch (_) {
+    throw new Error(text || r.statusText);
+  }
+  if (!r.ok) {
+    const msg = (data && (data.message || data.details || data.hint)) || text || r.statusText;
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  return rpcSonucCoz(data, fnAdi);
+}
+
+document.getElementById('mainArea').addEventListener('change', (ev) => {
+  const inp = ev.target;
+  if (inp.id !== 'adminRestoreFile') return;
+  const f = inp.files && inp.files[0];
+  const lab = document.getElementById('adminRestoreLabel');
+  if (lab) lab.textContent = f ? f.name : '';
+});
+
 document.getElementById('mainArea').addEventListener('click', async (ev) => {
+  const yBtn = ev.target.closest('#adminTamYedekBtn');
+  if (yBtn && !yBtn.disabled) {
+    yBtn.disabled = true;
+    alertBox('Yedek hazırlanıyor…', 'info');
+    try {
+      const yedek = await adminRpc('admin_database_export', {});
+      const tarihStr = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const blob = new Blob([JSON.stringify(yedek, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `aile-cuzdani-tam-yedek-${tarihStr}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      alertBox('Tam yedek indirildi.', 'info');
+      setTimeout(() => alertBox(''), 3000);
+    } catch (e) {
+      let m = e.message || String(e);
+      if (m.includes('does not exist') || m.includes('42883') || m.includes('P0001')) {
+        m += ' — Supabase’te supabase-admin-database-backup-restore.sql dosyasını çalıştırın.';
+      }
+      alertBox(escapeHtml(m), 'err');
+    } finally {
+      yBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (ev.target.closest('#adminRestorePick')) {
+    document.getElementById('adminRestoreFile')?.click();
+    return;
+  }
+
+  const gBtn = ev.target.closest('#adminGeriYukleBtn');
+  if (gBtn && !gBtn.disabled) {
+    const inp = document.getElementById('adminRestoreFile');
+    const f = inp && inp.files && inp.files[0];
+    if (!f) {
+      alertBox('Önce JSON dosyası seçin.', 'err');
+      return;
+    }
+    const onay = prompt(
+      'UYARI: Mevcut tüm uygulama tabloları bu dosyayla değiştirilecek.\n\nOnaylamak için tam olarak şunu yazın: TAM GERI YUKLE'
+    );
+    if (onay !== 'TAM GERI YUKLE') {
+      if (onay != null) alertBox('Onay metni eşleşmedi; işlem iptal.', 'err');
+      return;
+    }
+    gBtn.disabled = true;
+    alertBox('Geri yükleme başlıyor…', 'info');
+    try {
+      const text = await f.text();
+      const backup = JSON.parse(text);
+      await adminRpc('admin_database_restore', { p_backup: backup });
+      alertBox('Geri yükleme tamamlandı. Sayfayı yenilemeniz önerilir.', 'info');
+      setTimeout(() => alertBox(''), 4000);
+    } catch (e) {
+      let m = e.message || String(e);
+      if (m.includes('does not exist') || m.includes('42883')) {
+        m += ' — Supabase’te supabase-admin-database-backup-restore.sql dosyasını çalıştırın.';
+      }
+      alertBox(escapeHtml(m), 'err');
+    } finally {
+      gBtn.disabled = false;
+    }
+    return;
+  }
+
   const btn = ev.target.closest('.rol-kaydet');
   if (!btn || btn.disabled) return;
   const id = btn.getAttribute('data-id');
