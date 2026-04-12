@@ -543,18 +543,18 @@ async function kaydet() {
       if (!kontrol.ok || !Array.isArray(mevcut)) { hata++; continue; }
       if (mevcut.length > 0) { atlandi++; continue; }
 
-      // Transactions'a ekle
+      // Transactions'a ekle (taksitli satırlar: toplam_taksit/taksit_no/kalan_taksit — Taksitler sayfasında gösterilir; installments tablosuna yazılmaz)
       const ins = await fetch(`${SB_URL}/rest/v1/transactions`, {
         method: 'POST', headers: apiHeaders(),
         body: JSON.stringify({
           tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
           kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye,
-          notlar: '', owner_id: authUserId()
+          notlar: '', owner_id: authUserId(),
+          toplam_taksit: r.toplam_taksit != null ? r.toplam_taksit : 1,
+          taksit_no: r.taksit_no != null ? r.taksit_no : 1,
+          kalan_taksit: r.kalan_taksit != null ? r.kalan_taksit : 1
         })
       });
-
-      // NOT: Ekstre = geçmiş hareket; taksit satırları için installments eklenmez.
-      // Aksi halde son_odeme geçmişe düşer ve tümü "Gecikmiş" bildirimi üretirdi.
       if (!ins.ok) { hata++; continue; }
       basarili++;
     } catch(e) { hata++; }
