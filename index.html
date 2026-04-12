@@ -1000,21 +1000,23 @@ async function dashboardYukle(){
 function metricGoster(txn,taksit,butce){
   const toplamBuAy=txn.reduce((s,r)=>s+Number(r.tutar),0);
   const harcamaTaksitHaric=txn.filter(r=>r.kategori!=='taksit').reduce((s,r)=>s+Number(r.tutar),0);
-  /* Taksitler: sadece son_odeme_tarihi bu ay içinde olan bekleyen satırların tutar toplamı */
-  const taksitT=taksit.reduce((s,r)=>s+Number(r.tutar),0);
+  /* Taksit modülü: son_odeme bu ay, bekleyen (kart taksitleri + kredi taksitleri) */
+  const vadesBuAy=taksit.reduce((s,r)=>s+Number(r.tutar),0);
+  /* Özet: kayıtlı işlemler + bu ay ödenmesi planlanan taksit vadeleri (aynı borç iki yerde görünürse rakam şişer) */
+  const odemelerBuAy=toplamBuAy+vadesBuAy;
   const bH=butce.find(b=>b.uye==='hepsi'&&b.kategori==='genel');
   const hedef=bH?Number(bH.hedef):0;
   const kalan=Math.max(0,hedef-harcamaTaksitHaric);
   const pct=hedef>0?Math.round(harcamaTaksitHaric/hedef*100):0;
   document.getElementById('mGrid').innerHTML=`
-    <div class="m" title="Kategori &quot;taksit&quot; olan işlemler hariç, bu ayki harcama toplamı. Bütçe karşılaştırması buna göre."><div class="ml">Harcama (taksit hariç)</div><div class="mv">${formatPara(harcamaTaksitHaric)}</div><div class="ms">${ayAdi(secilenAy)}</div></div>
-    <div class="m" title="Bu ayki tüm işlem kayıtları; taksit ödemeleri (kategori: taksit) dahil."><div class="ml">Bu ay toplam harcama</div><div class="mv">${formatPara(toplamBuAy)}</div><div class="ms">${ayAdi(secilenAy)} · tüm işlemler</div></div>
-    <div class="m" title="Genel aylık bütçe, taksit hariç harcamaya göre doluluk ve kalan."><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
-    <div class="m" title="Son ödeme tarihi bu ay içinde olan bekleyen taksit satırlarının tutar toplamı (Taksitler sayfasındaki toplam kalan borç değildir)."><div class="ml">Bu ay taksit (vadeler)</div><div class="mv">${formatPara(taksitT)}</div><div class="ms">${taksit.length} kayıt · vadesi bu ay</div></div>
-    <div class="m" title="Seçili ayda kayıtlı işlem adedi (taksit ödemeleri dahil)."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
+    <div class="m" title="Bu ayki işlemlerden kategori &quot;taksit&quot; (karttan taksit ödemesi) çıkarılmış harcama. Bütçe buna göre."><div class="ml">Harcama (taksit hariç)</div><div class="mv">${formatPara(harcamaTaksitHaric)}</div><div class="ms">${ayAdi(secilenAy)}</div></div>
+    <div class="m" title="Taksitler sayfasındaki bekleyen satırlardan son ödeme tarihi bu ay içinde olanlar: kart taksitleri ve kredi/konut taksitleri (aylık tutar toplamı)."><div class="ml">Bu ay taksit (vadeler)</div><div class="mv">${formatPara(vadesBuAy)}</div><div class="ms">${taksit.length} satır · vade bu ay</div></div>
+    <div class="m" title="Tüm işlem tutarları + bu ay vadesi gelen taksit planı tutarları. Aynı borç hem işlemde hem planda görünüyorsa üst üste binme olabilir."><div class="ml">Bu ay ödemeler (özet)</div><div class="mv">${formatPara(odemelerBuAy)}</div><div class="ms">işlemler + vade planı</div></div>
+    <div class="m" title="Genel aylık bütçe hedefi; doluluk taksit hariç harcamaya göre."><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
+    <div class="m" title="Bu ay kayıtlı işlem sayısı."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
   const notEl=document.getElementById('dashMetrikNot');
   if(notEl){
-    notEl.innerHTML='<strong>Harcama (taksit hariç)</strong>, o ay işlemlerinden kategori alanı &quot;taksit&quot; olanları (karttan taksit ödeme kayıtları) çıkarır; <strong>bütçe</strong> bu tutara göre hesaplanır. <strong>Bu ay toplam harcama</strong> tüm işlemlerin toplamıdır. <strong>Bu ay taksit (vadeler)</strong>, vadesi bu ay olan <em>bekleyen taksit</em> satırlarının tutar toplamıdır (Taksitler sayfasındaki &quot;Toplam kalan&quot; farklı tanımdır).';
+    notEl.innerHTML='<strong>1</strong> Normal harcama (taksit ödeme işlemi kayıtları hariç). <strong>2</strong> Bu ay vadesi gelen bekleyen taksit satırları (kart + kredi). <strong>3</strong> İşlem toplamı ile (2) toplamının özeti; aynı taksit hem kart hareketi hem plan satırında görünüyorsa rakam şişebilir — tam örtüşme yoktur. <strong>Bütçe</strong> yalnızca (1) ile karşılaştırılır.';
   }
 }
 function trendGoster(txnYil,butceAy){
