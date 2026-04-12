@@ -1141,12 +1141,51 @@ async function islemleriYukle(){
     if(!data.length){document.getElementById('islemT').innerHTML='<div class="loader">Sonuç yok</div>';return;}
     const toplam=data.reduce((s,r)=>s+Number(r.tutar),0);
     document.getElementById('islemT').innerHTML=`
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:12px;color:var(--muted)">${data.length} işlem</span><span style="font-weight:500">${formatPara(toplam)}</span></div>
-      <table><thead><tr><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
-      <tbody>${data.map(r=>`<tr class="tr-h"><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${r.aciklama}</td><td class="mu hide-mob">${r.kategori}</td><td class="mu hide-mob">${UYE_ADI[r.uye]||r.uye}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${kaynakAdi(r.kaynak)}</span></td><td class="amt">${formatPara(r.tutar)}</td><td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`).join('')}</tbody></table>`;
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+          <button type="button" class="btn dan" id="islemTopluSilBtn" disabled style="font-size:12px;padding:5px 12px" onclick="islemSecilenleriSil()">Seçilenleri sil</button>
+          <button type="button" class="btn" style="font-size:12px;padding:5px 12px" onclick="islemTumunuIsaretle(false)">İşareti kaldır</button>
+          <span style="font-size:12px;color:var(--muted)">Satır veya sütun başlığındaki kutuyla çoklu seçim.</span>
+        </div>
+        <div style="text-align:right"><span style="font-size:12px;color:var(--muted)">${data.length} işlem</span> · <span style="font-weight:500">${formatPara(toplam)}</span></div>
+      </div>
+      <table><thead><tr><th style="width:40px"><input type="checkbox" id="islemChkAll" title="Tümünü işaretle" onchange="islemTumunuIsaretle(this.checked)"></th><th>Tarih</th><th>Açıklama</th><th class="hide-mob">Kategori</th><th class="hide-mob">Üye</th><th>Kaynak</th><th style="text-align:right">Tutar</th><th></th></tr></thead>
+      <tbody>${data.map(r=>`<tr class="tr-h"><td><input type="checkbox" class="islem-chk" data-id="${r.id}" onchange="islemSatirChkDegisti()"></td><td class="mu" style="white-space:nowrap">${r.tarih}</td><td>${r.aciklama}</td><td class="mu hide-mob">${r.kategori}</td><td class="mu hide-mob">${UYE_ADI[r.uye]||r.uye}</td><td><span class="badge ${kaynakClass(r.kaynak)}">${kaynakAdi(r.kaynak)}</span></td><td class="amt">${formatPara(r.tutar)}</td><td><button class="btn dan" style="padding:3px 8px;font-size:11px" onclick="islemSil('${r.id}')">Sil</button></td></tr>`).join('')}</tbody></table>`;
+    islemSatirChkDegisti();
   }catch(e){document.getElementById('islemT').innerHTML=`<div class="loader" style="color:var(--red)">Hata: ${e.message}</div>`;}
 }
 function islemFiltreTemizle(){['filAra','filMin','filMax'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['filU','filK','filKy'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});islemleriYukle();}
+function islemTumunuIsaretle(v){
+  document.querySelectorAll('#islemT .islem-chk').forEach(c=>{c.checked=v;});
+  const h=document.getElementById('islemChkAll');
+  if(h){h.indeterminate=false;}
+  islemTopluSilBtnGuncelle();
+}
+function islemSatirChkDegisti(){
+  const boxes=document.querySelectorAll('#islemT .islem-chk');
+  const h=document.getElementById('islemChkAll');
+  if(h&&boxes.length){
+    const n=[...boxes].filter(c=>c.checked).length;
+    h.checked=n===boxes.length;
+    h.indeterminate=n>0&&n<boxes.length;
+  }
+  islemTopluSilBtnGuncelle();
+}
+function islemTopluSilBtnGuncelle(){
+  const n=document.querySelectorAll('#islemT .islem-chk:checked').length;
+  const btn=document.getElementById('islemTopluSilBtn');
+  if(btn)btn.disabled=n===0;
+}
+async function islemSecilenleriSil(){
+  const ids=[...document.querySelectorAll('#islemT .islem-chk:checked')].map(c=>c.getAttribute('data-id')).filter(Boolean);
+  if(!ids.length)return;
+  if(!confirm(`${ids.length} işlem silinsin mi? Bu işlem geri alınamaz.`))return;
+  try{
+    await Promise.all(ids.map(id=>sbDelete('transactions',`id=eq.${encodeURIComponent(id)}`)));
+    toast(ids.length===1?'İşlem silindi':`${ids.length} işlem silindi`);
+    await islemleriYukle();
+  }catch(e){toast('Hata: '+e.message,true);islemleriYukle();}
+}
 async function islemSil(id){if(!confirm('Silmek istediğinize emin misiniz?'))return;try{await sbDelete('transactions',`id=eq.${id}`);toast('İşlem silindi');islemleriYukle();}catch(e){toast('Hata: '+e.message,true);}}
 
 // EKLE
