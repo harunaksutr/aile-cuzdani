@@ -261,8 +261,6 @@ body.dark .bildirim-item.upcoming{background:rgba(55,138,221,.12);color:#378ADD}
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="mg" id="mGrid"><div class="loader" style="grid-column:1/-1">Yükleniyor...</div></div>
-  <p id="dashMetrikNot" style="font-size:12px;color:var(--muted);margin:-4px 0 14px;line-height:1.5;max-width:920px"></p>
-  <p id="dashKartNot" style="font-size:12px;color:var(--muted);margin:-8px 0 14px;line-height:1.5;max-width:920px;border-left:3px solid var(--border);padding-left:10px"></p>
   <div class="cr">
     <div class="card">
       <div class="ct">Aylık trend</div>
@@ -995,15 +993,11 @@ async function dashboardYukle(){
     sonIslemGoster(txnAy.slice(0,10));
   }catch(e){
     document.getElementById('mGrid').innerHTML=`<div class="loader" style="grid-column:1/-1;color:var(--red)">Hata: ${e.message}</div>`;
-    const ne=document.getElementById('dashMetrikNot');if(ne)ne.textContent='';
-    const kn=document.getElementById('dashKartNot');if(kn)kn.textContent='';
   }
 }
 function metricGoster(txn,taksit,butce){
   const toplamBuAy=txn.reduce((s,r)=>s+Number(r.tutar),0);
   const harcamaTaksitHaric=txn.filter(r=>r.kategori!=='taksit').reduce((s,r)=>s+Number(r.tutar),0);
-  /* Kategori "taksit": bankadan karta ödeme + Taksitler sayfasından "Ödendi" ile oluşan kayıtlar */
-  const taksitKategoriToplam=txn.filter(r=>r.kategori==='taksit').reduce((s,r)=>s+Number(r.tutar),0);
   /* Taksit modülü: son_odeme bu ay, bekleyen (kart taksitleri + kredi taksitleri) */
   const vadesBuAy=taksit.reduce((s,r)=>s+Number(r.tutar),0);
   /* Özet: kayıtlı işlemler + bu ay ödenmesi planlanan taksit vadeleri (aynı borç iki yerde görünürse rakam şişer) */
@@ -1018,14 +1012,6 @@ function metricGoster(txn,taksit,butce){
     <div class="m" title="Tüm işlem tutarları + bu ay vadesi gelen taksit planı tutarları. Aynı borç hem işlemde hem planda görünüyorsa üst üste binme olabilir."><div class="ml">Bu ay ödemeler (özet)</div><div class="mv">${formatPara(odemelerBuAy)}</div><div class="ms">işlemler + vade planı</div></div>
     <div class="m" title="Genel aylık bütçe hedefi; doluluk taksit hariç harcamaya göre."><div class="ml">Bütçe</div><div class="mv">%${pct}</div><div class="ms ${pct>90?'danger':pct>75?'':'success'}">${formatPara(kalan)} kaldı</div></div>
     <div class="m" title="Bu ay kayıtlı işlem sayısı."><div class="ml">İşlem sayısı</div><div class="mv">${txn.length}</div><div class="ms">${ayAdi(secilenAy)}</div></div>`;
-  const notEl=document.getElementById('dashMetrikNot');
-  if(notEl){
-    notEl.innerHTML='<strong>1</strong> Normal harcama (taksit ödeme işlemi kayıtları hariç). <strong>2</strong> Bu ay vadesi gelen bekleyen taksit satırları (kart + kredi). <strong>3</strong> İşlem toplamı ile (2) toplamının özeti; aynı taksit hem kart hareketi hem plan satırında görünüyorsa rakam şişebilir — tam örtüşme yoktur. <strong>Bütçe</strong> yalnızca (1) ile karşılaştırılır.';
-  }
-  const kartEl=document.getElementById('dashKartNot');
-  if(kartEl){
-    kartEl.innerHTML='<strong>Kredi kartı:</strong> Ekstredeki satırlar kart <em>alımlarıdır</em> (harcama kutusuna girer). Bankadan karta yaptığın ödemeyi <strong>İşlemler → Yeni işlem</strong> ile kaydet; kategori olarak <strong>taksit</strong> kullan (böylece harcama özetinden ayrılır). Bu ay <strong>taksit</strong> kategorisindeki işlem toplamı (kart ödemesi + taksit planı &quot;Ödendi&quot; kayıtları): <strong>'+formatPara(taksitKategoriToplam)+'</strong>. Ekstrenin sonundaki <em>ödenecek / asgari ödeme</em> tutarı PDF’den otomatik gelmez; kalanı görmek için o tutardan bu ödemeyi çıkar veya ayrı bir kategori (ör. &quot;kart borcu&quot;) ile sadece kart ödemelerini işaretleyebilirsin.';
-  }
 }
 function trendGoster(txnYil,butceAy){
   const dark=document.body.classList.contains('dark');
