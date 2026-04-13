@@ -673,6 +673,13 @@ async function parseEtYapiKredi(metin) {
   const taksitSatiriRe = /(\d+)\s*\/\s*(\d+)\s*taksidi/i;
 
   const fold = (s) => turkceRegexFold(String(s || ''));
+  const anaKartSahibiRe = /^Sn\.\s+(.+)$/i;
+  let anaKartSahibiAd = '';
+  const anaKartSatiri = satirlar.find(s => anaKartSahibiRe.test(s));
+  if (anaKartSatiri) {
+    const mm = anaKartSatiri.match(anaKartSahibiRe);
+    if (mm && mm[1]) anaKartSahibiAd = mm[1].trim();
+  }
   const uyeBul = (adSoyad) => {
     if (!adSoyad || !uyeler.length) return (uyeler[0]?.slug || 'harun');
     const f = fold(adSoyad).replace(/\s+/g, ' ').trim();
@@ -684,10 +691,12 @@ async function parseEtYapiKredi(metin) {
 
   let sonIslemIndex = -1;
   let aktifUyeSlug = (uyeler[0]?.slug || 'harun');
+  let aktifKartSahibiAd = '';
   for (const satir of satirlar) {
     const ks = satir.match(kartSahibiRe);
     if (ks && ks[1]) {
       aktifUyeSlug = uyeBul(ks[1]);
+      aktifKartSahibiAd = ks[1].trim();
       continue;
     }
 
@@ -726,6 +735,7 @@ async function parseEtYapiKredi(metin) {
       .trim();
     if (!aciklama || aciklama.length < 2) continue;
 
+    const ekKartMi = !!(aktifKartSahibiAd && anaKartSahibiAd && fold(aktifKartSahibiAd) !== fold(anaKartSahibiAd));
     const rec = {
       tarih, aciklama, tutar,
       toplam_taksit: 1,
@@ -734,6 +744,8 @@ async function parseEtYapiKredi(metin) {
       kategori: kategoriTahminKayitli(aciklama, kategoriler),
       kaynak: 'yapı_kredi',
       uye: aktifUyeSlug,
+      kart_sahibi_ad: aktifKartSahibiAd || null,
+      ek_kart: ekKartMi,
       secili: true
     };
     islemler.push(rec);
@@ -804,7 +816,7 @@ function tabloGoster() {
     <tr>
       <td><input type="checkbox" class="chk" ${r.secili?'checked':''} onchange="parseEdilenIslemler[${i}].secili=this.checked;ekstreTaslakKaydetErtele()"></td>
       <td class="mu">${r.tarih}</td>
-      <td>${r.aciklama}${r.toplam_taksit>1?` <span style="font-size:11px;color:var(--muted)">(${r.taksit_no}/${r.toplam_taksit})</span>`:''}</td>
+      <td>${r.aciklama}${r.ek_kart ? ` <span style="font-size:11px;color:var(--muted)">(Ek kart: ${r.kart_sahibi_ad || 'Ek Kart'})</span>` : ''}${r.toplam_taksit>1?` <span style="font-size:11px;color:var(--muted)">(${r.taksit_no}/${r.toplam_taksit})</span>`:''}</td>
       <td>${r.toplam_taksit>1?'<span class="badge taksit">Taksitli</span>':'<span class="badge normal">Normal</span>'}</td>
       <td>
         <select class="cat-sel" onchange="parseEdilenIslemler[${i}].kategori=this.value;ekstreTaslakKaydetErtele()">
@@ -866,7 +878,7 @@ async function kaydet() {
         body: JSON.stringify({
           tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
           kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye,
-          notlar: '', owner_id: authUserId(),
+          notlar: r.ek_kart ? `Ek kart: ${r.kart_sahibi_ad || ''}`.trim() : '', owner_id: authUserId(),
           toplam_taksit: r.toplam_taksit != null ? r.toplam_taksit : 1,
           taksit_no: r.taksit_no != null ? r.taksit_no : 1,
           kalan_taksit: r.kalan_taksit != null ? r.kalan_taksit : 1
