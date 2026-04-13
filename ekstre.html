@@ -65,6 +65,7 @@ td.mu{color:var(--muted)}
     <button class="btn" id="bBtn-enpara"  onclick="bankaSec('enpara')">Enpara</button>
     <button class="btn" id="bBtn-yapı_kredi" onclick="bankaSec('yapı_kredi')">Yapı Kredi</button>
     <button class="btn" id="bBtn-qnb"       onclick="bankaSec('qnb')">QNB Finansbank</button>
+    <button class="btn" id="bBtn-kuveyt_turk" onclick="bankaSec('kuveyt_turk')">KuveytTürk</button>
   </div>
   <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
     <span class="drop-icon">📄</span>
@@ -247,14 +248,16 @@ const BANKA_HINTS = {
   garanti:    'Garanti BBVA kredi kartı ekstresi (.pdf)',
   enpara:     'Enpara kredi kartı ekstresi (.pdf)',
   yapı_kredi: 'Yapı Kredi kredi kartı ekstresi (.pdf)',
-  qnb:        'QNB Finansbank kredi kartı ekstresi (.pdf)'
+  qnb:        'QNB Finansbank kredi kartı ekstresi (.pdf)',
+  kuveyt_turk:'KuveytTürk kredi kartı ekstresi (.pdf)'
 };
 
 const BANKA_KISA = {
   garanti: 'Garanti BBVA',
   enpara: 'Enpara',
   yapı_kredi: 'Yapı Kredi',
-  qnb: 'QNB Finansbank'
+  qnb: 'QNB Finansbank',
+  kuveyt_turk: 'KuveytTürk'
 };
 
 function bankaSec(banka) {
@@ -528,10 +531,12 @@ async function pdfYukle(file) {
       else if (metinKisa.includes('enpara')) tespit = 'enpara';
       else if (metinKisa.includes('yapi kredi') || metinKisa.includes('worldcard')) tespit = 'yapı_kredi';
       else if (metinKisa.includes('qnb') || metinKisa.includes('qnbcard') || metinKisa.includes('finansbank')) tespit = 'qnb';
+      else if (metinKisa.includes('kuveyt turk') || metinKisa.includes('katilim bankasi') || metinKisa.includes('altinpuan')) tespit = 'kuveyt_turk';
       bankaSec(tespit);
 
       if (tespit === 'enpara') await parseEtEnpara(tumMetin);
       else if (tespit === 'qnb') await parseEtQnb(tumMetin);
+      else if (tespit === 'kuveyt_turk') await parseEtKuveytTurk(tumMetin);
       else await parseEtGaranti(tumMetin);
       window._debugMetin = tumMetin;
     } catch(err) { log('Hata: ' + err.message); }
@@ -897,6 +902,53 @@ async function parseEtQnb(metin) {
       secili: true
     });
   }
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+async function parseEtKuveytTurk(metin) {
+  const islemler = [];
+  const satirlar = pdfMetinNormalizeEt(metin).split('\n');
+
+  // KuveytTürk: DD/MM/YYYY AÇIKLAMA 849.00 TL [ALTINPUAN]
+  const tarihRe = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
+  const tutarRe = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*TL\b/i;
+  const skipFolded = /odeme|tesekkur|hesap\s*kesim|son\s*odeme|donem\s*borc|kart\s*ve\s*musteri\s*bilgileri|altinpuan|kart\s*limiti|kullanilabilir\s*limit|nakit\s*avans|credit\s*card\s*statement/;
+
+  for (const satir of satirlar) {
+    const s = satir.trim();
+    const match = s.match(tarihRe);
+    if (!match) continue;
+
+    const tarih = `${match[3]}-${match[2]}-${match[1]}`;
+    const kalan = match[4].trim();
+    const folded = turkceRegexFold(kalan);
+    if (skipFolded.test(folded)) continue;
+
+    const tutarMatch = kalan.match(tutarRe);
+    if (!tutarMatch) continue;
+
+    const tutar = parseFloat(tutarMatch[1].replace(/,/g, ''));
+    if (isNaN(tutar) || tutar <= 0) continue;
+
+    let aciklama = kalan
+      .replace(tutarRe, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (!aciklama || aciklama.length < 2) continue;
+
+    islemler.push({
+      tarih, aciklama, tutar,
+      toplam_taksit: 1,
+      kalan_taksit: 1,
+      taksit_no: 1,
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
+      kaynak: 'kuveyt_turk',
+      uye: (uyeler.length ? uyeler[0].slug : 'harun'),
+      secili: true
+    });
+  }
+
   const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
   sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
 }
