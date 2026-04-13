@@ -529,7 +529,12 @@ async function pdfYukle(file) {
       let tespit = seciliBanka;
       if (metinKisa.includes('garanti') || metinKisa.includes('bonus')) tespit = 'garanti';
       else if (metinKisa.includes('enpara')) tespit = 'enpara';
-      else if (metinKisa.includes('yapi kredi') || metinKisa.includes('worldcard')) tespit = 'yapı_kredi';
+      else if (
+        metinKisa.includes('yapi kredi') ||
+        metinKisa.includes('yapi ve kredi') ||
+        metinKisa.includes('worldcard') ||
+        metinKisa.includes('worldpuan')
+      ) tespit = 'yapı_kredi';
       else if (metinKisa.includes('qnb') || metinKisa.includes('qnbcard') || metinKisa.includes('finansbank')) tespit = 'qnb';
       else if (metinKisa.includes('kuveyt turk') || metinKisa.includes('katilim bankasi') || metinKisa.includes('altinpuan')) tespit = 'kuveyt_turk';
       bankaSec(tespit);
