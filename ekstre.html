@@ -667,7 +667,7 @@ async function parseEtYapiKredi(metin) {
 
   // Yapı Kredi: "10 Mart 2026 ACIKLAMA 5.244,34 41.954,88 / 8 944"
   const tarihRe = /^(\d{1,2})\s+(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(\d{4})\s+(.+)/;
-  const satirSonuTutarRe = /([+-]?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+[+-]?\d{1,3}(?:\.\d{3})*,\d{2}\s*\/\s*\d+)?(?:\s+\d+)?\s*$/;
+  const satirSonuTutarRe = /([+-]?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+[+-]?\d{1,3}(?:\.\d{3})*,\d{2}\s*\/\s*\d+)?(?:\s+\d{1,3}(?:\.\d{3})*)?\s*$/;
   const kartSahibiRe = /^Kart Numarası\s*:\s*.+?\s+([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ\s]+)$/i;
   const skipFolded = /odeme|hesap\s*ozeti|onceki\s*donem|toplam|worldpuan|yillik\s*kart|ucret|faiz|bsmv|kkdf/;
   const taksitSatiriRe = /(\d+)\s*\/\s*(\d+)\s*taksidi/i;
