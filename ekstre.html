@@ -536,6 +536,7 @@ async function pdfYukle(file) {
 
       if (tespit === 'enpara') await parseEtEnpara(tumMetin);
       else if (tespit === 'qnb') await parseEtQnb(tumMetin);
+      else if (tespit === 'yapı_kredi') await parseEtYapiKredi(tumMetin);
       else if (tespit === 'kuveyt_turk') await parseEtKuveytTurk(tumMetin);
       else await parseEtGaranti(tumMetin);
       window._debugMetin = tumMetin;
@@ -651,6 +652,71 @@ async function parseEtEnpara(metin) {
       secili: true
     });
   }
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+async function parseEtYapiKredi(metin) {
+  const islemler = [];
+  const satirlar = pdfMetinNormalizeEt(metin).split('\n').map(s => s.trim()).filter(Boolean);
+
+  // Yapı Kredi: "10 Mart 2026 ACIKLAMA 5.244,34 41.954,88 / 8 944"
+  const tarihRe = /^(\d{1,2})\s+(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(\d{4})\s+(.+)/;
+  const satirSonuTutarRe = /([+-]?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+[+-]?\d{1,3}(?:\.\d{3})*,\d{2}\s*\/\s*\d+)?(?:\s+\d+)?\s*$/;
+  const skipFolded = /odeme|hesap\s*ozeti|onceki\s*donem|toplam|worldpuan|yillik\s*kart|ucret|faiz|bsmv|kkdf/;
+  const taksitSatiriRe = /(\d+)\s*\/\s*(\d+)\s*taksidi/i;
+
+  let sonIslemIndex = -1;
+  for (const satir of satirlar) {
+    const tk = satir.match(taksitSatiriRe);
+    if (tk && sonIslemIndex >= 0) {
+      const taksitNo = parseInt(tk[1], 10);
+      const toplamTaksit = parseInt(tk[2], 10);
+      if (taksitNo >= 1 && toplamTaksit >= taksitNo) {
+        islemler[sonIslemIndex].taksit_no = taksitNo;
+        islemler[sonIslemIndex].toplam_taksit = toplamTaksit;
+        islemler[sonIslemIndex].kalan_taksit = toplamTaksit - taksitNo + 1;
+      }
+      continue;
+    }
+
+    const m = satir.match(tarihRe);
+    if (!m) continue;
+
+    const gun = m[1].padStart(2, '0');
+    const ay = AYLAR[m[2]];
+    const tarih = `${m[3]}-${ay}-${gun}`;
+    const kalan = m[4].trim();
+    const folded = turkceRegexFold(kalan);
+    if (skipFolded.test(folded)) continue;
+
+    const tutarMatch = kalan.match(satirSonuTutarRe);
+    if (!tutarMatch) continue;
+    if (tutarMatch[1].startsWith('+')) continue; // iade/alacak satırları
+
+    const tutar = parseFloat(tutarMatch[1].replace(/\./g, '').replace(',', '.'));
+    if (isNaN(tutar) || tutar <= 0) continue;
+
+    let aciklama = kalan
+      .replace(satirSonuTutarRe, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (!aciklama || aciklama.length < 2) continue;
+
+    const rec = {
+      tarih, aciklama, tutar,
+      toplam_taksit: 1,
+      kalan_taksit: 1,
+      taksit_no: 1,
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
+      kaynak: 'yapı_kredi',
+      uye: (uyeler[0]?.slug || 'harun'),
+      secili: true
+    };
+    islemler.push(rec);
+    sonIslemIndex = islemler.length - 1;
+  }
+
   const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
   sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
 }
