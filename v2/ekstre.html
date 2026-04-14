@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ekstre Yükle — Aile Cüzdanı</title>
+<style>
+:root{--bg:#f5f5f3;--card:#fff;--border:rgba(0,0,0,.08);--text:#1a1a18;--muted:#73726c;--blue:#378ADD;--green:#1D9E75;--amber:#EF9F27;--red:#E24B4A;--r:10px;--rl:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--card:#272725;--border:rgba(255,255,255,.08);--text:#e8e6de;--muted:#888780}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;padding:20px}
+h2{font-size:18px;font-weight:500;margin-bottom:20px}
+.card{background:var(--card);border:.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:16px}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:40px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:16px}
+.drop-zone:hover,.drop-zone.over{border-color:var(--blue)}
+.drop-zone p{color:var(--muted);font-size:13px;margin-top:8px}
+.drop-icon{font-size:32px;display:block;margin-bottom:8px}
+input[type=file]{display:none}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--bg)}.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.pri:hover{opacity:.9}
+.btn.suc{background:var(--green);color:#fff;border-color:var(--green)}.btn.suc:hover{opacity:.9}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:500;color:var(--muted);padding:6px 8px;border-bottom:.5px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+td{padding:8px 8px;border-bottom:.5px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+td.amt{font-weight:500;text-align:right;white-space:nowrap}
+td.mu{color:var(--muted)}
+.chk{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px}
+.badge.taksit{background:rgba(239,159,39,.15);color:#854F0B}
+.badge.normal{background:rgba(55,138,221,.15);color:#185FA5}
+@media(prefers-color-scheme:dark){.badge.taksit{color:#EF9F27}.badge.normal{color:#378ADD}}
+.stat{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.stat-item{background:var(--bg);border-radius:var(--r);padding:10px 14px;min-width:120px}
+.stat-item .sl{font-size:12px;color:var(--muted);margin-bottom:3px}
+.stat-item .sv{font-size:18px;font-weight:500}
+.progress{background:var(--border);border-radius:4px;height:6px;margin:12px 0;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .3s}
+#log{font-size:12px;color:var(--muted);margin-top:8px;min-height:20px}
+.alert{padding:10px 14px;border-radius:var(--r);font-size:13px;margin-bottom:12px}
+.alert.info{background:rgba(55,138,221,.1);color:var(--blue);border:.5px solid rgba(55,138,221,.3)}
+.alert.suc{background:rgba(29,158,117,.1);color:var(--green);border:.5px solid rgba(29,158,117,.3)}
+.alert.err{background:rgba(226,75,74,.1);color:var(--red);border:.5px solid rgba(226,75,74,.3)}
+.sel-all{font-size:12px;color:var(--blue);cursor:pointer;text-decoration:underline}
+.cat-sel{font-size:12px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);min-width:10rem;max-width:100%}
+/* overflow-x:auto içinde <select> açılır listesi çoğu tarayıcıda kırpılır (ör. 10 seçenekten 6 görünür) */
+.tbl-ekstre-outer{overflow:visible;width:100%}
+#islemTablosu.tbl-ekstre{min-width:720px;width:100%}
+@media(max-width:800px){body{overflow-x:auto;-webkit-overflow-scrolling:touch}}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
+.back-btn:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<a class="back-btn" href="index.html?app=1">← Dashboard'a dön</a>
+<h2 id="pageTitle">Ekstre yükle</h2>
+
+<div class="card" id="uploadCard">
+  <div id="ekstreTaslakBanner" class="alert info" style="display:none;margin-bottom:14px"></div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <label style="font-size:13px;color:var(--muted);align-self:center">Banka:</label>
+    <button class="btn" id="bBtn-garanti" onclick="bankaSec('garanti')" style="border-color:var(--blue);color:var(--blue)">Garanti BBVA</button>
+    <button class="btn" id="bBtn-enpara"  onclick="bankaSec('enpara')">Enpara</button>
+    <button class="btn" id="bBtn-yapı_kredi" onclick="bankaSec('yapı_kredi')">Yapı Kredi</button>
+    <button class="btn" id="bBtn-qnb"       onclick="bankaSec('qnb')">QNB Finansbank</button>
+    <button class="btn" id="bBtn-kuveyt_turk" onclick="bankaSec('kuveyt_turk')">KuveytTürk</button>
+  </div>
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <span class="drop-icon">📄</span>
+    <strong>PDF ekstreyi buraya sürükle veya tıkla</strong>
+    <p id="dropHint">Garanti BBVA kredi kartı ekstresi (.pdf)</p>
+  </div>
+  <input type="file" id="fileInput" accept=".pdf" onchange="pdfYukle(this.files[0])">
+  <div id="log"></div>
+</div>
+
+<div class="card" id="previewCard" style="display:none">
+  <div id="alertBox"></div>
+  <div class="stat" id="statBox"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div>
+      <strong style="font-size:14px">Bulunan işlemler</strong>
+      <span class="sel-all" style="margin-left:12px" onclick="tumunuSec(true)">Tümünü seç</span>
+      <span class="sel-all" style="margin-left:8px" onclick="tumunuSec(false)">Temizle</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="sifirla()">Yeni PDF</button>
+      <button class="btn suc" id="kaydetBtn" onclick="kaydet()">Seçilenleri Kaydet</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;padding:12px 0;border-top:.5px solid var(--border);border-bottom:.5px solid var(--border)">
+    <span style="font-size:13px;color:var(--muted)">Tüm satırlarda üye:</span>
+    <select id="uyeTopluSec" class="cat-sel" aria-label="Toplu üye"></select>
+    <button type="button" class="btn" onclick="tumSatirlardaUyeUygula()">Hepsini uygula</button>
+    <span style="font-size:12px;color:var(--muted)">Listeyi tek tek değiştirmeden aynı üyeye çevirir.</span>
+  </div>
+
+  <div class="tbl-ekstre-outer">
+    <table id="islemTablosu" class="tbl-ekstre">
+      <thead>
+        <tr>
+          <th><input type="checkbox" class="chk" onchange="tumunuSec(this.checked)"></th>
+          <th>Tarih</th>
+          <th>Açıklama</th>
+          <th>Tür</th>
+          <th>Kategori</th>
+          <th>Üye</th>
+          <th style="text-align:right">Tutar</th>
+        </tr>
+      </thead>
+      <tbody id="islemBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const SB_URL = 'https://ttsftbfzuaifheiajqbw.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function apiHeaders(){
+  const token = authToken() || SB_KEY;
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+// Auth yoksa login'e yönlendir
+if(!authToken()){ location.href = 'index.html?app=1&auth=login'; }
+
+/** Sunucu tablosu: kullanıcı başına tek satır (bkz. supabase-ekstre-import-drafts.sql) */
+const EKSTRE_TASLAK_TABLO = 'ekstre_import_drafts';
+/** Eski yerel taslak anahtarı — bir kez sunucuya taşınır ve silinir */
+const LEGACY_EKSTRE_TASLAK_KEY = 'ac_ekstre_onizleme_v1';
+let _ekstreTaslakTimer = null;
+
+async function ekstreTaslakSatirYaz(islemlerArr, banka, updatedIso) {
+  const uid = authUserId();
+  if (!uid || !islemlerArr?.length) return false;
+  const payload = {
+    secili_banka: banka,
+    islemler: islemlerArr,
+    updated_at: updatedIso
+  };
+  try {
+    const q = `owner_id=eq.${encodeURIComponent(uid)}&select=owner_id`;
+    const get = await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?${q}`, { headers: apiHeaders() });
+    const rows = get.ok ? await get.json() : [];
+    if (Array.isArray(rows) && rows.length > 0) {
+      const patch = await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?owner_id=eq.${encodeURIComponent(uid)}`, {
+        method: 'PATCH',
+        headers: { ...apiHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      return patch.ok;
+    }
+    const ins = await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}`, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({ owner_id: uid, ...payload })
+    });
+    return ins.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function ekstreTaslakSunucuyaYaz() {
+  if (!parseEdilenIslemler?.length) return;
+  await ekstreTaslakSatirYaz(parseEdilenIslemler, seciliBanka, new Date().toISOString());
+}
+
+async function ekstreTaslakSunucudanOku() {
+  const uid = authUserId();
+  if (!uid) return null;
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?owner_id=eq.${encodeURIComponent(uid)}&select=secili_banka,islemler,updated_at`,
+      { headers: apiHeaders() }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    const row = rows[0];
+    const islemler = row.islemler;
+    if (!Array.isArray(islemler) || !islemler.length) return null;
+    return {
+      seciliBanka: row.secili_banka || 'garanti',
+      islemler,
+      savedAt: row.updated_at
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function ekstreTaslakSunucudanSil() {
+  const uid = authUserId();
+  if (!uid) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/${EKSTRE_TASLAK_TABLO}?owner_id=eq.${encodeURIComponent(uid)}`, {
+      method: 'DELETE',
+      headers: apiHeaders()
+    });
+  } catch (e) {}
+  try { localStorage.removeItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e2) {}
+}
+
+async function ekstreTaslakLegacyLocaldenSunucuyaTasi() {
+  let raw;
+  try { raw = localStorage.getItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e) { return null; }
+  if (!raw) return null;
+  let p;
+  try { p = JSON.parse(raw); } catch (e) { return null; }
+  if (!p.islemler?.length) {
+    try { localStorage.removeItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e2) {}
+    return null;
+  }
+  const banka = p.seciliBanka || 'garanti';
+  const iso = p.savedAt || new Date().toISOString();
+  const ok = await ekstreTaslakSatirYaz(p.islemler, banka, iso);
+  if (ok) {
+    try { localStorage.removeItem(LEGACY_EKSTRE_TASLAK_KEY); } catch (e3) {}
+    return { seciliBanka: banka, islemler: p.islemler, savedAt: iso };
+  }
+  return null;
+}
+
+function ekstreTaslakKaydetErtele() {
+  clearTimeout(_ekstreTaslakTimer);
+  _ekstreTaslakTimer = setTimeout(() => { void ekstreTaslakSunucuyaYaz(); }, 400);
+}
+
+function ekstreTaslakTemizle() {
+  void ekstreTaslakSunucudanSil();
+}
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let parseEdilenIslemler = [];
+let kategoriler = [];
+let uyeler = [];
+let seciliBanka = 'garanti';
+
+const BANKA_HINTS = {
+  garanti:    'Garanti BBVA kredi kartı ekstresi (.pdf)',
+  enpara:     'Enpara kredi kartı ekstresi (.pdf)',
+  yapı_kredi: 'Yapı Kredi kredi kartı ekstresi (.pdf)',
+  qnb:        'QNB Finansbank kredi kartı ekstresi (.pdf)',
+  kuveyt_turk:'KuveytTürk kredi kartı ekstresi (.pdf)'
+};
+
+const BANKA_KISA = {
+  garanti: 'Garanti BBVA',
+  enpara: 'Enpara',
+  yapı_kredi: 'Yapı Kredi',
+  qnb: 'QNB Finansbank',
+  kuveyt_turk: 'KuveytTürk'
+};
+
+function bankaSec(banka) {
+  seciliBanka = banka;
+  document.querySelectorAll('[id^=bBtn-]').forEach(b => {
+    b.style.borderColor = ''; b.style.color = '';
+  });
+  const btn = document.getElementById('bBtn-' + banka);
+  if (btn) { btn.style.borderColor = 'var(--blue)'; btn.style.color = 'var(--blue)'; }
+  document.getElementById('dropHint').textContent = BANKA_HINTS[banka] || 'Kredi kartı ekstresi (.pdf)';
+  const bas = BANKA_KISA[banka] || 'Ekstre';
+  const pt = document.getElementById('pageTitle');
+  if (pt) pt.textContent = bas + ' — ekstre yükle';
+}
+
+const AYLAR = {
+  'Ocak':'01','Şubat':'02','Mart':'03','Nisan':'04','Mayıs':'05','Haziran':'06',
+  'Temmuz':'07','Ağustos':'08','Eylül':'09','Ekim':'10','Kasım':'11','Aralık':'12'
+};
+
+// Anahtar kelime → kategori eşleştirme (ilk eşleşen kazanır: e-ticaret / dijital, market anahtarından önce)
+const KAT_MAP = [
+  {keys:['hepsiburada','trendyol','amazon','n11','gittigidiyor','boyner','lcw','lc waikiki','deichmann','mudo','atakonline','kaft'],kat:'alışveriş'},
+  {keys:['playstation','steam','apple.com','google play','netflix','spotify','iyzico','bitwarden'],kat:'dijital'},
+  {keys:['elektrik','doğalgaz','igdaş','iski','su ','fatura','vodafone','turkcell','türk telekom','internet','amazon prime','disney','youtube'],kat:'fatura'},
+  {keys:['opet','bp ','shell','total','petrol','akaryakıt','benzin','lpg'],kat:'yakıt'},
+  {keys:['restaurant','restoran','burger','pizza','kfc','mcdonald','starbucks','kahve','cafe','yemek','döner','pide'],kat:'restoran'},
+  {keys:['eczane','hastane','klinik','doktor','sağlık','ilaç','optik'],kat:'sağlık'},
+  {keys:['okul','dershane','kurs','kitap','kırtasiye','eğitim'],kat:'eğitim'},
+  {keys:['migros','bim','a101','şok','carrefour','metro','macro','kiler','groseri','happy center','migro'],kat:'market'},
+  {keys:['yemeksepeti','moka','getir yemek','sakura','börekçi','ekmek','mamülle','fırın'],kat:'yeme-içme'},
+  {keys:['jolly','tatil','otel','uçak','turizm','seyahat'],kat:'seyahat'},
+  {keys:['universal','pet','veteriner','hayvan'],kat:'evcil hayvan'},
+  {keys:['saglik','sağlık','eczane','diş','dental','klinik','hastane'],kat:'sağlık'},
+  {keys:['qnb','finansbank'],kat:'banka'},
+];
+
+/** İç tahmin etiketi → senin kategori adlarına olası eş sırası (ilk bulunan kullanılır) */
+const TAHMIN_KULLANICI_ESI = {
+  'alışveriş': ['internet-alisveris', 'internet alışveriş', 'alışveriş', 'alisveris', 'market'],
+  'dijital': ['internet-alisveris', 'eğlence-uyelikler', 'eglence-uyelikler', 'iş', 'is'],
+  'fatura': ['fatura'],
+  'yakıt': ['ulasim', 'ulaşım', 'yakıt'],
+  'restoran': ['restoran', 'bes'],
+  'sağlık': ['saglik', 'sağlık'],
+  'eğitim': ['egitim-kurs', 'eğitim-kurs', 'okul', 'eğitim', 'egitim'],
+  'market': ['market', 'bes'],
+  'yeme-içme': ['bes', 'restoran', 'yeme-içme', 'yeme-icme'],
+  'seyahat': ['ulasim', 'ulaşım', 'eglence-uyelikler', 'eğlence-uyelikler'],
+  'evcil hayvan': ['bes', 'diger', 'diğer'],
+  'banka': ['kredi kartı', 'kredi karti', 'banka'],
+  'diğer': ['diger', 'diğer']
+};
+
+function kategoriTahmin(aciklama) {
+  const lower = aciklama.toLocaleLowerCase('tr-TR');
+  for (const m of KAT_MAP) {
+    if (m.keys.some(k => lower.includes(k))) return m.kat;
+  }
+  return 'diğer';
+}
+
+/**
+ * Tahmini, kullanıcının Supabase’teki gerçek kategori adlarından birine çevirir (dropdown ile birebir).
+ */
+function kategoriTahminKayitli(aciklama, mevcutAdlar) {
+  const adlar = mevcutAdlar && mevcutAdlar.length ? mevcutAdlar : [];
+  if (!adlar.length) return kategoriTahmin(aciklama);
+  const ic = kategoriTahmin(aciklama);
+  const f = (s) => turkceRegexFold(String(s));
+  const adaGore = new Map(adlar.map((a) => [f(a), a]));
+
+  const adaylar = TAHMIN_KULLANICI_ESI[ic] || [];
+  for (const aday of adaylar) {
+    if (adaGore.has(f(aday))) return adaGore.get(f(aday));
+  }
+  if (adaGore.has(f(ic))) return adaGore.get(f(ic));
+  for (const a of adlar) {
+    if (f(a) === f(ic)) return a;
+  }
+  for (const d of ['diger', 'diğer', 'diger']) {
+    if (adaGore.has(f(d))) return adaGore.get(f(d));
+  }
+  return adlar[0];
+}
+
+/** PDF / DB arasında boşluk farkını tolere etmek için */
+function ekstreAciklamaNormalize(s) {
+  return String(s || '').replace(/\s+/g, ' ').trim();
+}
+
+/** PDF (TR) ve DB (sayı) tutarlarını aynı anahtara çevirir */
+function ekstreTutarSayi(t) {
+  if (typeof t === 'number' && !isNaN(t)) return t;
+  const s = String(t).trim();
+  if (/^\d{1,3}(\.\d{3})*,\d{2}$/.test(s)) {
+    return parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  }
+  const n = parseFloat(s.replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
+
+function ekstreTutarAnahtar(t) {
+  const n = ekstreTutarSayi(t);
+  return isNaN(n) ? '0.00' : n.toFixed(2);
+}
+
+/** Kayıtlı işlemle eşleştirme: tarih + tutar + açıklama (+ kaynak sorguda) */
+function ekstreEslemAnahtar(r) {
+  return `${r.tarih}|${ekstreTutarAnahtar(r.tutar)}|${ekstreAciklamaNormalize(r.aciklama)}`;
+}
+
+function ekstreTarihAraligi(islemler) {
+  let min = null;
+  let max = null;
+  for (const r of islemler) {
+    const t = r.tarih;
+    if (!t) continue;
+    if (min == null || t < min) min = t;
+    if (max == null || t > max) max = t;
+  }
+  return { min, max };
+}
+
+/**
+ * Daha önce kaydedilmiş işlemlerle aynı satırlara tahmin yerine DB’deki kategori/üye uygulanır.
+ */
+async function ekstreOncekiKayitlardanKategoriUyeYukle(islemler) {
+  const uid = authUserId();
+  if (!uid || !islemler?.length) return { islemler, oncekiEsleme: 0 };
+  const { min, max } = ekstreTarihAraligi(islemler);
+  if (!min || !max) return { islemler, oncekiEsleme: 0 };
+
+  const kaynaklar = [...new Set(islemler.map(r => r.kaynak || seciliBanka).filter(Boolean))];
+  const map = new Map();
+  const fold = (s) => turkceRegexFold(String(s));
+
+  try {
+    for (const kn of kaynaklar) {
+      const q = [
+        `owner_id=eq.${encodeURIComponent(uid)}`,
+        `kaynak=eq.${encodeURIComponent(kn)}`,
+        `tarih=gte.${encodeURIComponent(min)}`,
+        `tarih=lte.${encodeURIComponent(max)}`,
+        'select=tarih,aciklama,tutar,kategori,uye',
+        'limit=5000'
+      ].join('&');
+      const res = await fetch(`${SB_URL}/rest/v1/transactions?${q}`, { headers: apiHeaders() });
+      if (!res.ok) continue;
+      const rows = await res.json();
+      if (!Array.isArray(rows)) continue;
+      for (const row of rows) {
+        const key = ekstreEslemAnahtar(row);
+        if (!map.has(key)) map.set(key, row);
+      }
+    }
+  } catch (e) {
+    return { islemler, oncekiEsleme: 0 };
+  }
+
+  let oncekiEsleme = 0;
+  for (const r of islemler) {
+    const prev = map.get(ekstreEslemAnahtar(r));
+    if (!prev) continue;
+    oncekiEsleme++;
+    if (prev.kategori) {
+      if (kategoriler.includes(prev.kategori)) {
+        r.kategori = prev.kategori;
+      } else {
+        const y = kategoriler.find(c => fold(c) === fold(prev.kategori));
+        if (y) r.kategori = y;
+      }
+    }
+    if (prev.uye && uyeler.some(u => u.slug === prev.uye)) {
+      r.uye = prev.uye;
+    }
+  }
+  return { islemler, oncekiEsleme };
+}
+
+function log(msg) { document.getElementById('log').textContent = msg; }
+
+/**
+ * PDF.js metninde İ/ı/I ve Ö/ö sık bozulur (font/encoding). Kontrol karakterlerini siler.
+ */
+function pdfMetinNormalizeEt(t) {
+  if (t == null || t === '') return '';
+  let s = String(t);
+  s = s.replace(/\uFFFD/g, '');
+  s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+  try { s = s.normalize('NFC'); } catch (e) {}
+  return s;
+}
+
+/**
+ * Türkçe güvenli karşılaştırma: tr-TR küçük harf + aksanları ASCII'ye indir (skip regex için).
+ * Düz toLowerCase() kullanma — "İ".toLowerCase() bazı ortamlarda "i" değil.
+ */
+function turkceRegexFold(s) {
+  return s.toLocaleLowerCase('tr-TR')
+    .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ı/g, 'i')
+    .replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/â/g, 'a');
+}
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files[0]) pdfYukle(e.dataTransfer.files[0]); });
+
+async function ekstreKategoriUyeYukle() {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/categories?order=sira.asc`, { headers: apiHeaders() });
+    const rows = await r.json();
+    if (!r.ok) {
+      kategoriler = [];
+    } else if (!Array.isArray(rows)) {
+      kategoriler = [];
+    } else {
+      kategoriler = rows.map((k) => k.ad).filter(Boolean);
+    }
+  } catch (e) {
+    kategoriler = [];
+  }
+  try {
+    const ru = await fetch(`${SB_URL}/rest/v1/members?aktif=eq.true&order=sira.asc`, { headers: apiHeaders() });
+    const mrows = await ru.json();
+    if (!ru.ok || !Array.isArray(mrows)) {
+      uyeler = [{ slug: 'harun', ad: 'Harun' }];
+    } else {
+      uyeler = mrows;
+    }
+  } catch (e) {
+    uyeler = [{ slug: 'harun', ad: 'Harun' }];
+  }
+}
+
+async function pdfYukle(file) {
+  if (!file || file.type !== 'application/pdf') { log('Hata: Lütfen PDF dosyası seçin'); return; }
+  log('PDF okunuyor...');
+  await ekstreKategoriUyeYukle();
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const pdf = await pdfjsLib.getDocument({data: e.target.result}).promise;
+      log(`${pdf.numPages} sayfa bulundu, analiz ediliyor...`);
+      let tumMetin = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const satirlar = [];
+        let sonY = null; let satir = '';
+        content.items.forEach(item => {
+          const y = Math.round(item.transform[5]);
+          if (sonY !== null && Math.abs(y - sonY) > 3) {
+            if (satir.trim()) satirlar.push(satir.trim());
+            satir = '';
+          }
+          satir += item.str + ' ';
+          sonY = y;
+        });
+        if (satir.trim()) satirlar.push(satir.trim());
+        tumMetin += satirlar.join('\n') + '\n';
+      }
+      tumMetin = pdfMetinNormalizeEt(tumMetin);
+      // Banka otomatik tespit
+      const metinKisa = turkceRegexFold(tumMetin.substring(0, 500));
+      let tespit = seciliBanka;
+      if (metinKisa.includes('garanti') || metinKisa.includes('bonus')) tespit = 'garanti';
+      else if (metinKisa.includes('enpara')) tespit = 'enpara';
+      else if (
+        metinKisa.includes('yapi kredi') ||
+        metinKisa.includes('yapi ve kredi') ||
+        metinKisa.includes('worldcard') ||
+        metinKisa.includes('worldpuan')
+      ) tespit = 'yapı_kredi';
+      else if (metinKisa.includes('qnb') || metinKisa.includes('qnbcard') || metinKisa.includes('finansbank')) tespit = 'qnb';
+      else if (metinKisa.includes('kuveyt turk') || metinKisa.includes('katilim bankasi') || metinKisa.includes('altinpuan')) tespit = 'kuveyt_turk';
+      bankaSec(tespit);
+
+      if (tespit === 'enpara') await parseEtEnpara(tumMetin);
+      else if (tespit === 'qnb') await parseEtQnb(tumMetin);
+      else if (tespit === 'yapı_kredi') await parseEtYapiKredi(tumMetin);
+      else if (tespit === 'kuveyt_turk') await parseEtKuveytTurk(tumMetin);
+      else await parseEtGaranti(tumMetin);
+      window._debugMetin = tumMetin;
+    } catch(err) { log('Hata: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function parseEtGaranti(metin) {
+  const islemler = [];
+  const satirlar = metin.split('\n');
+  const tarihRe  = /^(\d{1,2})\s+(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(\d{4})\s+(.+)/;
+  const tutarRe  = /(\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+bosluk)?\s*$/i;
+  const taksitRe = /(\d{1,3}(?:\.\d{3})*,\d{2})x(\d+)=[\d.,]+\s+(\d+)\.Taksit/i;
+  const skipRe   = /ÖDEMENİZ|TEŞEKKÜR|DEVİR|FAİZ|BSMV|KKDF|KAMPANYA|TOPLAM|LİMİT/i;
+
+  for (let satir of satirlar) {
+    // Satır sonundaki "bosluk" ve boşlukları temizle
+    satir = satir.replace(/\s*bosluk\s*$/i, '').trim();
+
+    const match = satir.match(tarihRe);
+    if (!match) continue;
+    const gun = match[1].padStart(2,'0');
+    const ay  = AYLAR[match[2]];
+    const tarih = `${match[3]}-${ay}-${gun}`;
+    const kalan = match[4].trim().replace(/\s*bosluk\s*$/i, '').trim();
+    if (skipRe.test(kalan)) continue;
+    const tutarMatch = kalan.match(tutarRe);
+    if (!tutarMatch) continue;
+    const tutar = parseFloat(tutarMatch[1].replace(/\./g,'').replace(',','.'));
+    if (isNaN(tutar) || tutar <= 0) continue;
+    const taksitMatch = kalan.match(taksitRe);
+    let toplamTaksit=1, kalanTaksit=1, taksitNo=1;
+    if (taksitMatch) { toplamTaksit=parseInt(taksitMatch[2]); taksitNo=parseInt(taksitMatch[3]); kalanTaksit=toplamTaksit-taksitNo+1; }
+    let aciklama = kalan.replace(taksitRe,'').replace(tutarRe,'').replace(/\s+\d+\s*$/,'').replace(/\s{2,}/g,' ').trim();
+    if (!aciklama || aciklama.length < 2) continue;
+    islemler.push({ tarih, aciklama, tutar, toplam_taksit:toplamTaksit, kalan_taksit:kalanTaksit, taksit_no:taksitNo, kategori:kategoriTahminKayitli(aciklama, kategoriler), kaynak:'garanti', uye:(uyeler[0]?.slug||'harun'), secili:true });
+  }
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+async function parseEtEnpara(metin) {
+  const islemler = [];
+  const satirlar = metin.split('\n');
+
+  // Önce satırları birleştir: tarihle başlayan satır yeni işlem,
+  // tarih olmayan satırlar bir öncekine eklenir
+  const tarihBaslangic = /^\d{2}\/\d{2}\/\d{4}\s/;
+  const birlesik = [];
+  for (const s of satirlar) {
+    if (tarihBaslangic.test(s)) {
+      birlesik.push(s);
+    } else if (birlesik.length > 0) {
+      // Boş değilse ve anlamlıysa bir önceki satıra ekle
+      const temiz = s.trim();
+      if (temiz) birlesik[birlesik.length - 1] += ' ' + temiz;
+    }
+  }
+
+  const tarihRe  = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
+  const tutarRe  = /(-?\s?\d{1,3}(?:\.\d{3})*,\d{2})\s*TL\s*$/i;
+  const taksitRe = /\b(\d+)\/(\d+)\b/;
+
+  for (const satir of birlesik) {
+    const match = satir.match(tarihRe);
+    if (!match) continue;
+    const tarih = `${match[3]}-${match[2]}-${match[1]}`;
+    const kalan = match[4].trim();
+
+    // Ödeme satırlarını atla (PDF'te İ/ı bozulabilir — fold ile kontrol)
+    const kf = turkceRegexFold(kalan);
+    if (/^odeme\s*-|enpara\.com/.test(kf)) continue;
+
+    const tutarMatch = kalan.match(tutarRe);
+    if (!tutarMatch) continue;
+    const tutarStr = tutarMatch[1].replace(/\s/g,'').replace(/\./g,'').replace(',','.');
+    const tutar = parseFloat(tutarStr);
+    if (isNaN(tutar) || tutar <= 0) continue;
+
+    // Taksit bilgisi
+    const taksitMatch = kalan.match(taksitRe);
+    let toplamTaksit=1, kalanTaksit=1, taksitNo=1;
+    if (taksitMatch) {
+      taksitNo     = parseInt(taksitMatch[1]);
+      toplamTaksit = parseInt(taksitMatch[2]);
+      kalanTaksit  = toplamTaksit - taksitNo + 1;
+    }
+
+    // Açıklama temizle — parantez içleri, taksit, tutar kaldır
+    let aciklama = kalan
+      .replace(/\([^)]*\)/g, '')
+      .replace(tutarRe, '')
+      .replace(taksitRe, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    // "Kredi kartı borcu yapılandırma" → kısa isim
+    if (aciklama.toLowerCase().includes('yapılandırma')) {
+      aciklama = 'Kredi kartı yapılandırma';
+    }
+
+    if (!aciklama || aciklama.length < 2) continue;
+
+    islemler.push({
+      tarih, aciklama, tutar,
+      toplam_taksit: toplamTaksit,
+      kalan_taksit:  kalanTaksit,
+      taksit_no:     taksitNo,
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
+      kaynak: 'enpara',
+      uye: (uyeler[0]?.slug||'harun'),
+      secili: true
+    });
+  }
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+async function parseEtYapiKredi(metin) {
+  const islemler = [];
+  const satirlar = pdfMetinNormalizeEt(metin).split('\n').map(s => s.trim()).filter(Boolean);
+
+  // Yapı Kredi: "10 Mart 2026 ACIKLAMA 5.244,34 41.954,88 / 8 944"
+  const tarihRe = /^(\d{1,2})\s+(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(\d{4})\s+(.+)/;
+  const satirSonuTutarRe = /([+-]?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+[+-]?\d{1,3}(?:\.\d{3})*,\d{2}\s*\/\s*\d+)?(?:\s+\d{1,3}(?:\.\d{3})*)?\s*$/;
+  const kartSahibiRe = /^Kart Numarası\s*:\s*.+?\s+([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ\s]+)$/i;
+  const skipFolded = /odeme|hesap\s*ozeti|onceki\s*donem|toplam|worldpuan|yillik\s*kart|ucret|faiz|bsmv|kkdf/;
+  const taksitSatiriRe = /(\d+)\s*\/\s*(\d+)\s*taksidi/i;
+
+  const fold = (s) => turkceRegexFold(String(s || ''));
+  const anaKartSahibiRe = /^Sn\.\s+(.+)$/i;
+  let anaKartSahibiAd = '';
+  const anaKartSatiri = satirlar.find(s => anaKartSahibiRe.test(s));
+  if (anaKartSatiri) {
+    const mm = anaKartSatiri.match(anaKartSahibiRe);
+    if (mm && mm[1]) anaKartSahibiAd = mm[1].trim();
+  }
+  const uyeBul = (adSoyad) => {
+    if (!adSoyad || !uyeler.length) return (uyeler[0]?.slug || 'harun');
+    const f = fold(adSoyad).replace(/\s+/g, ' ').trim();
+    let u = uyeler.find(x => fold(x.ad) === f);
+    if (u) return u.slug;
+    u = uyeler.find(x => f.includes(fold(x.ad)) || fold(x.ad).includes(f));
+    return u ? u.slug : (uyeler[0]?.slug || 'harun');
+  };
+
+  let sonIslemIndex = -1;
+  let aktifUyeSlug = (uyeler[0]?.slug || 'harun');
+  let aktifKartSahibiAd = '';
+  for (const satir of satirlar) {
+    const ks = satir.match(kartSahibiRe);
+    if (ks && ks[1]) {
+      aktifUyeSlug = uyeBul(ks[1]);
+      aktifKartSahibiAd = ks[1].trim();
+      continue;
+    }
+
+    const tk = satir.match(taksitSatiriRe);
+    if (tk && sonIslemIndex >= 0) {
+      const taksitNo = parseInt(tk[1], 10);
+      const toplamTaksit = parseInt(tk[2], 10);
+      if (taksitNo >= 1 && toplamTaksit >= taksitNo) {
+        islemler[sonIslemIndex].taksit_no = taksitNo;
+        islemler[sonIslemIndex].toplam_taksit = toplamTaksit;
+        islemler[sonIslemIndex].kalan_taksit = toplamTaksit - taksitNo + 1;
+      }
+      continue;
+    }
+
+    const m = satir.match(tarihRe);
+    if (!m) continue;
+
+    const gun = m[1].padStart(2, '0');
+    const ay = AYLAR[m[2]];
+    const tarih = `${m[3]}-${ay}-${gun}`;
+    const kalan = m[4].trim();
+    const folded = turkceRegexFold(kalan);
+    if (skipFolded.test(folded)) continue;
+
+    const tutarMatch = kalan.match(satirSonuTutarRe);
+    if (!tutarMatch) continue;
+    if (tutarMatch[1].startsWith('+')) continue; // iade/alacak satırları
+
+    const tutar = parseFloat(tutarMatch[1].replace(/\./g, '').replace(',', '.'));
+    if (isNaN(tutar) || tutar <= 0) continue;
+
+    let aciklama = kalan
+      .replace(satirSonuTutarRe, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (!aciklama || aciklama.length < 2) continue;
+
+    const ekKartMi = !!(aktifKartSahibiAd && anaKartSahibiAd && fold(aktifKartSahibiAd) !== fold(anaKartSahibiAd));
+    const rec = {
+      tarih, aciklama, tutar,
+      toplam_taksit: 1,
+      kalan_taksit: 1,
+      taksit_no: 1,
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
+      kaynak: 'yapı_kredi',
+      uye: aktifUyeSlug,
+      kart_sahibi_ad: aktifKartSahibiAd || null,
+      ek_kart: ekKartMi,
+      secili: true
+    };
+    islemler.push(rec);
+    sonIslemIndex = islemler.length - 1;
+  }
+
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+function sonucGoster(islemler, opts) {
+  parseEdilenIslemler = islemler;
+  log('');
+
+  if (!islemler.length) {
+    document.getElementById('alertBox').innerHTML = '<div class="alert err">İşlem bulunamadı. Farklı banka seçili olabilir.</div>';
+    document.getElementById('previewCard').style.display = 'block';
+    document.getElementById('uploadCard').style.display = 'none';
+    return;
+  }
+
+  const toplam  = islemler.reduce((s,r) => s + r.tutar, 0);
+  const taksitli = islemler.filter(r => r.toplam_taksit > 1).length;
+
+  document.getElementById('statBox').innerHTML = `
+    <div class="stat-item"><div class="sl">Banka</div><div class="sv" style="font-size:14px">${BANKA_HINTS[seciliBanka]?.split(' ')[0]||seciliBanka}</div></div>
+    <div class="stat-item"><div class="sl">İşlem sayısı</div><div class="sv">${islemler.length}</div></div>
+    <div class="stat-item"><div class="sl">Toplam tutar</div><div class="sv">${toplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div></div>
+    <div class="stat-item"><div class="sl">Taksitli</div><div class="sv">${taksitli}</div></div>`;
+
+  let uyari = '';
+  if (!kategoriler.length) {
+    uyari = '<div class="alert err" style="margin-bottom:10px">Kategoriler veritabanından yüklenemedi veya liste boş. Ana uygulamada kategori ayarlarını kontrol edip sayfayı yenileyin.</div>';
+  }
+  const taslakBlok = (opts && (opts.taslakGeri || opts.fromSayfaYukle))
+    ? '<div class="alert info" style="margin-bottom:10px">Kaydedilmemiş önizlemeniz geri yüklendi. Kategori ve üye seçimleri hesabınıza kaydedilir.</div>'
+    : '';
+  const oncekiBlok = (opts && opts.oncekiEsleme > 0)
+    ? `<div class="alert info" style="margin-bottom:10px">${opts.oncekiEsleme} işlem için daha önce kaydettiğiniz kategori ve üye kullanıldı.</div>`
+    : '';
+  document.getElementById('alertBox').innerHTML = uyari + taslakBlok + oncekiBlok + `<div class="alert info">${islemler.length} işlem bulundu. Kaydetmek istediklerini seç.</div>`;
+  tabloGoster();
+  uyeTopluSecDoldur();
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('uploadCard').style.display = 'none';
+}
+
+function uyeTopluSecDoldur() {
+  const sel = document.getElementById('uyeTopluSec');
+  if (!sel || !uyeler.length) return;
+  const onceki = sel.value;
+  sel.innerHTML = uyeler.map(u => `<option value="${u.slug}">${u.ad}</option>`).join('');
+  if (onceki && uyeler.some(u => u.slug === onceki)) sel.value = onceki;
+}
+
+function tumSatirlardaUyeUygula() {
+  const sel = document.getElementById('uyeTopluSec');
+  if (!sel || !parseEdilenIslemler.length) return;
+  const slug = sel.value;
+  parseEdilenIslemler.forEach(r => { r.uye = slug; });
+  tabloGoster();
+  void ekstreTaslakSunucuyaYaz();
+}
+
+function tabloGoster() {
+  const tbody = document.getElementById('islemBody');
+  tbody.innerHTML = parseEdilenIslemler.map((r, i) => `
+    <tr>
+      <td><input type="checkbox" class="chk" ${r.secili?'checked':''} onchange="parseEdilenIslemler[${i}].secili=this.checked;ekstreTaslakKaydetErtele()"></td>
+      <td class="mu">${r.tarih}</td>
+      <td>${r.aciklama}${r.ek_kart ? ` <span style="font-size:11px;color:var(--muted)">(Ek kart: ${r.kart_sahibi_ad || 'Ek Kart'})</span>` : ''}${r.toplam_taksit>1?` <span style="font-size:11px;color:var(--muted)">(${r.taksit_no}/${r.toplam_taksit})</span>`:''}</td>
+      <td>${r.toplam_taksit>1?'<span class="badge taksit">Taksitli</span>':'<span class="badge normal">Normal</span>'}</td>
+      <td>
+        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].kategori=this.value;ekstreTaslakKaydetErtele()">
+          ${kategoriler.map(k=>`<option value="${k}" ${k===r.kategori?'selected':''}>${k}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="cat-sel" onchange="parseEdilenIslemler[${i}].uye=this.value;ekstreTaslakKaydetErtele()">
+          ${uyeler.map(u=>`<option value="${u.slug}" ${r.uye===u.slug?'selected':''}>${u.ad}</option>`).join('')}
+        </select>
+      </td>
+      <td class="amt">${r.tutar.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
+    </tr>`).join('');
+  ekstreTaslakKaydetErtele();
+}
+
+function tumunuSec(secili) {
+  parseEdilenIslemler.forEach(r => r.secili = secili);
+  document.querySelectorAll('#islemBody .chk').forEach(c => c.checked = secili);
+  ekstreTaslakKaydetErtele();
+}
+
+async function kaydet() {
+  const secili = parseEdilenIslemler.filter(r => r.secili);
+  if (!secili.length) { alert('En az bir işlem seçin'); return; }
+
+  const btn = document.getElementById('kaydetBtn');
+  btn.disabled = true; btn.textContent = 'Kontrol ediliyor...';
+
+  let basarili = 0, atlandi = 0, hata = 0;
+
+  for (const r of secili) {
+    try {
+      // Duplicate kontrol — aynı tarih + açıklama + tutar var mı?
+      const kontrol = await fetch(
+        `${SB_URL}/rest/v1/transactions?tarih=eq.${r.tarih}&aciklama=eq.${encodeURIComponent(r.aciklama)}&tutar=eq.${r.tutar}&kaynak=eq.${encodeURIComponent(r.kaynak||seciliBanka)}&owner_id=eq.${encodeURIComponent(authUserId())}&select=id`,
+        { headers: apiHeaders() }
+      );
+      const mevcut = await kontrol.json();
+      if (!kontrol.ok || !Array.isArray(mevcut)) { hata++; continue; }
+      if (mevcut.length > 0) {
+        try {
+          await fetch(`${SB_URL}/rest/v1/transactions?id=eq.${encodeURIComponent(mevcut[0].id)}`, {
+            method: 'PATCH', headers: apiHeaders(),
+            body: JSON.stringify({
+              toplam_taksit: r.toplam_taksit != null ? r.toplam_taksit : 1,
+              taksit_no: r.taksit_no != null ? r.taksit_no : 1,
+              kalan_taksit: r.kalan_taksit != null ? r.kalan_taksit : 1
+            })
+          });
+        } catch (e) {}
+        atlandi++;
+        continue;
+      }
+
+      // Transactions'a ekle (taksitli satırlar: toplam_taksit/taksit_no/kalan_taksit — Taksitler sayfasında gösterilir; installments tablosuna yazılmaz)
+      const ins = await fetch(`${SB_URL}/rest/v1/transactions`, {
+        method: 'POST', headers: apiHeaders(),
+        body: JSON.stringify({
+          tarih: r.tarih, aciklama: r.aciklama, tutar: r.tutar,
+          kategori: r.kategori, kaynak: r.kaynak || seciliBanka, uye: r.uye,
+          notlar: r.ek_kart ? `Ek kart: ${r.kart_sahibi_ad || ''}`.trim() : '', owner_id: authUserId(),
+          toplam_taksit: r.toplam_taksit != null ? r.toplam_taksit : 1,
+          taksit_no: r.taksit_no != null ? r.taksit_no : 1,
+          kalan_taksit: r.kalan_taksit != null ? r.kalan_taksit : 1
+        })
+      });
+      if (!ins.ok) { hata++; continue; }
+      basarili++;
+    } catch(e) { hata++; }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Seçilenleri Kaydet';
+
+  const mesajlar = [];
+  if (basarili > 0) mesajlar.push(`${basarili} işlem kaydedildi`);
+  if (atlandi  > 0) mesajlar.push(`${atlandi} tekrar atlandı`);
+  if (hata     > 0) mesajlar.push(`${hata} hata`);
+
+  const tamamHatasiz = hata === 0 && (basarili > 0 || atlandi > 0);
+
+  if (hata > 0) {
+    document.getElementById('alertBox').innerHTML = basarili > 0 || atlandi > 0
+      ? `<div class="alert err">${mesajlar.join(' · ')} · Bazı kayıtlar eklenemedi.</div>`
+      : `<div class="alert err">${mesajlar.length ? mesajlar.join(' · ') : 'Kayıt başarısız.'} Bağlantıyı kontrol edin.</div>`;
+    return;
+  }
+
+  if (!tamamHatasiz) {
+    document.getElementById('alertBox').innerHTML = `<div class="alert err">Kayıt başarısız. Bağlantıyı kontrol edin.</div>`;
+    return;
+  }
+
+  const ozet = basarili > 0
+    ? (atlandi > 0
+      ? `${basarili} işlem kategori ve üye bilgileriyle hatasız kaydedildi; ${atlandi} kayıt zaten vardı.`
+      : `Seçtiğiniz ${basarili} işlem kategori ve üye bilgileriyle hatasız kaydedildi.`)
+    : `Seçilen ${atlandi} işlem zaten kayıtlıydı (yinelenen kayıt oluşmadı).`;
+
+  document.getElementById('alertBox').innerHTML = `<div class="alert suc">${ozet} Ana sayfaya yönlendiriliyorsunuz…</div>`;
+
+  try {
+    sessionStorage.setItem('ac_ekstre_bildirim', JSON.stringify({ kaydedilen: basarili, atlandi: atlandi }));
+  } catch (e) {}
+  ekstreTaslakTemizle();
+
+  setTimeout(() => { location.href = 'index.html?app=1'; }, 900);
+}
+
+async function parseEtQnb(metin) {
+  const islemler = [];
+  const satirlar = pdfMetinNormalizeEt(metin).split('\n');
+
+  // QNB: DD/MM/YYYY  AÇIKLAMA  TUTAR  [TAKSİT a/b]
+  // Tutar İngilizce format: 1,234.56 (virgül binlik). Taksit satır sonunda "3/3" olabiliyor — tutar bundan ÖNCE.
+  const tarihRe       = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
+  const tutarRe       = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*$/;
+  const trailTaksitRe = /\s+(\d{1,2})\/(\d{1,2})\s*$/;
+  const taksitRe      = /\b(\d{1,2})\/(\d{1,2})\b(?!\d)/;
+  // Skip: PDF'te İ→I, Ö→O düşebilir — turkceRegexFold ile ASCII kontrol
+  const skipFolded = /(?:^|\s)(?:o|ö)?deme\s*-\s*tesekk|(?:^|\s)(?:o|ö)?deme\s*-|tesekkur\s+ederiz|onceki\s*donem\s*bakiye|onceki\s*donem\b|devir|parapuan\s*kazanimi|parapuan\s*kullanimi|e-ticaret\s*kampanyasi|genel\s*toplam|hesap\s*ozeti|^para\s*puan\s*islemleriniz\b/;
+  const faizRe = /\(ana\s*para\s*:/i;
+
+  for (const satir of satirlar) {
+    const s = satir.trim();
+    const match = s.match(tarihRe);
+    if (!match) continue;
+
+    const tarih = `${match[3]}-${match[2]}-${match[1]}`;
+    const kalan = match[4].trim();
+
+    if (skipFolded.test(turkceRegexFold(kalan))) continue;
+    if (faizRe.test(kalan)) continue;
+
+    const endTaksit = kalan.match(trailTaksitRe);
+    const kalanForTutar = kalan.replace(trailTaksitRe, '').trim();
+    const tutarMatch = kalanForTutar.match(tutarRe);
+    if (!tutarMatch) continue;
+
+    const tutar = parseFloat(tutarMatch[1].replace(/,/g, ''));
+    if (isNaN(tutar) || tutar <= 0) continue;
+
+    let toplamTaksit = 1, kalanTaksit = 1, taksitNo = 1;
+    if (endTaksit) {
+      const a = parseInt(endTaksit[1], 10);
+      const b = parseInt(endTaksit[2], 10);
+      if (a >= 1 && a <= b && b >= 2 && b <= 60) {
+        taksitNo = a;
+        toplamTaksit = b;
+        kalanTaksit = toplamTaksit - taksitNo + 1;
+      }
+    } else {
+      const kalanTemiz = kalanForTutar.replace(tutarRe, '').replace(/\([^)]*\)/g, '').trim();
+      const taksitMatch = kalanTemiz.match(taksitRe);
+      if (taksitMatch) {
+        const a = parseInt(taksitMatch[1], 10);
+        const b = parseInt(taksitMatch[2], 10);
+        if (a >= 1 && a <= b && b >= 2 && b <= 60) {
+          taksitNo = a;
+          toplamTaksit = b;
+          kalanTaksit = toplamTaksit - taksitNo + 1;
+        }
+      }
+    }
+
+    let aciklama = kalanForTutar
+      .replace(tutarRe, '')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\s+bu\s+.+sipari[şsŞ]\s*kodu\s*:.*/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    if (!aciklama || aciklama.length < 2) continue;
+
+    islemler.push({
+      tarih, aciklama, tutar,
+      toplam_taksit: toplamTaksit,
+      kalan_taksit:  kalanTaksit,
+      taksit_no:     taksitNo,
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
+      kaynak: 'qnb',
+      uye: (uyeler.length ? uyeler[0].slug : 'harun'),
+      secili: true
+    });
+  }
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+async function parseEtKuveytTurk(metin) {
+  const islemler = [];
+  const satirlar = pdfMetinNormalizeEt(metin).split('\n');
+
+  // KuveytTürk: DD/MM/YYYY AÇIKLAMA 849.00 TL [ALTINPUAN]
+  const tarihRe = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)/;
+  const tutarRe = /(-?\d{1,3}(?:,\d{3})*\.\d{2})\s*TL\b/i;
+  const skipFolded = /odeme|tesekkur|hesap\s*kesim|son\s*odeme|donem\s*borc|kart\s*ve\s*musteri\s*bilgileri|altinpuan|kart\s*limiti|kullanilabilir\s*limit|nakit\s*avans|credit\s*card\s*statement/;
+
+  for (const satir of satirlar) {
+    const s = satir.trim();
+    const match = s.match(tarihRe);
+    if (!match) continue;
+
+    const tarih = `${match[3]}-${match[2]}-${match[1]}`;
+    const kalan = match[4].trim();
+    const folded = turkceRegexFold(kalan);
+    if (skipFolded.test(folded)) continue;
+
+    const tutarMatch = kalan.match(tutarRe);
+    if (!tutarMatch) continue;
+
+    const tutar = parseFloat(tutarMatch[1].replace(/,/g, ''));
+    if (isNaN(tutar) || tutar <= 0) continue;
+
+    let aciklama = kalan
+      .replace(tutarRe, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (!aciklama || aciklama.length < 2) continue;
+
+    islemler.push({
+      tarih, aciklama, tutar,
+      toplam_taksit: 1,
+      kalan_taksit: 1,
+      taksit_no: 1,
+      kategori: kategoriTahminKayitli(aciklama, kategoriler),
+      kaynak: 'kuveyt_turk',
+      uye: (uyeler.length ? uyeler[0].slug : 'harun'),
+      secili: true
+    });
+  }
+
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(islemler);
+  sonucGoster(islemler, oncekiEsleme ? { oncekiEsleme } : undefined);
+}
+
+
+function sifirla() {
+  parseEdilenIslemler = [];
+  ekstreTaslakTemizle();
+  document.getElementById('previewCard').style.display = 'none';
+  document.getElementById('uploadCard').style.display = 'block';
+  document.getElementById('fileInput').value = '';
+  log('');
+}
+
+function ekstreTaslakKaldir() {
+  ekstreTaslakTemizle();
+  const b = document.getElementById('ekstreTaslakBanner');
+  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
+}
+
+async function ekstreTaslakPayloadUygula(p, opts) {
+  if (!p?.islemler?.length) return;
+  parseEdilenIslemler = p.islemler;
+  if (p.seciliBanka) bankaSec(p.seciliBanka);
+  parseEdilenIslemler.forEach(r => {
+    if (kategoriler.length && r.kategori && !kategoriler.includes(r.kategori)) {
+      r.kategori = kategoriler[0];
+    }
+    if (uyeler.length && r.uye && !uyeler.some(u => u.slug === r.uye)) {
+      r.uye = uyeler[0].slug;
+    }
+  });
+  const { oncekiEsleme } = await ekstreOncekiKayitlardanKategoriUyeYukle(parseEdilenIslemler);
+  const sonOpts = { ...(opts || {}) };
+  if (oncekiEsleme) sonOpts.oncekiEsleme = oncekiEsleme;
+  sonucGoster(parseEdilenIslemler, (sonOpts.fromSayfaYukle || sonOpts.oncekiEsleme) ? sonOpts : undefined);
+  const b = document.getElementById('ekstreTaslakBanner');
+  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
+}
+
+async function ekstreTaslakGeriYukle(opts) {
+  let p = opts && opts.payload;
+  if (!p) p = await ekstreTaslakSunucudanOku();
+  if (!p?.islemler?.length) {
+    p = await ekstreTaslakLegacyLocaldenSunucuyaTasi();
+  }
+  await ekstreTaslakPayloadUygula(p, opts);
+}
+
+async function ekstreSayfaTaslakKontrol() {
+  await ekstreKategoriUyeYukle();
+  let p = await ekstreTaslakSunucudanOku();
+  if (!p?.islemler?.length) {
+    p = await ekstreTaslakLegacyLocaldenSunucuyaTasi();
+  }
+  if (!p?.islemler?.length) return;
+  await ekstreTaslakPayloadUygula(p, { fromSayfaYukle: true });
+}
+
+bankaSec(seciliBanka);
+void ekstreSayfaTaslakKontrol();
+</script>
+</body>
+</html>
