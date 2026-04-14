@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yönetim — Aile Cüzdanı</title>
+<style>
+:root{--bg:#f5f5f3;--card:#fff;--border:rgba(0,0,0,.08);--text:#1a1a18;--muted:#73726c;--blue:#378ADD;--green:#1D9E75;--amber:#EF9F27;--red:#E24B4A;--r:10px;--rl:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--card:#272725;--border:rgba(255,255,255,.08);--text:#e8e6de;--muted:#888780}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;padding:20px;max-width:960px;margin:0 auto}
+h2{font-size:18px;font-weight:500;margin-bottom:4px}
+.sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.card{background:var(--card);border:.5px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:16px}
+.ct{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer;transition:background .15s;text-decoration:none}
+.btn:hover{background:var(--bg)}.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.pri:hover{opacity:.9}
+.btn.suc{background:var(--green);color:#fff;border-color:var(--green)}.btn.suc:hover{opacity:.9}
+.btn.dan{color:var(--red);border-color:rgba(226,75,74,.35)}.btn.dan:hover{background:rgba(226,75,74,.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:16px;cursor:pointer}
+.back-btn:hover{color:var(--text)}
+.alert{padding:12px 14px;border-radius:var(--r);font-size:13px;margin-bottom:14px;line-height:1.55}
+.alert.info{background:rgba(55,138,221,.1);color:var(--blue);border:.5px solid rgba(55,138,221,.3)}
+.alert.err{background:rgba(226,75,74,.1);color:var(--red);border:.5px solid rgba(226,75,74,.3)}
+.alert.warn{background:rgba(239,159,39,.1);color:var(--amber);border:.5px solid rgba(239,159,39,.35)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+th{text-align:left;font-size:11px;font-weight:500;color:var(--muted);padding:8px;border-bottom:.5px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+td{padding:10px 8px;border-bottom:.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.tr-h:hover{background:var(--bg)}
+select{font-size:13px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:var(--muted)}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.badge.adm{background:rgba(55,138,221,.2);color:#185FA5;border:.5px solid rgba(55,138,221,.35)}
+.badge.usr{background:rgba(0,0,0,.06);color:var(--muted)}
+.role-cell{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.role-txt{font-size:12px;font-weight:600;letter-spacing:.02em}
+.role-txt.adm{color:#185FA5}
+.role-txt.usr{color:var(--muted)}
+.loader{color:var(--muted);padding:24px;text-align:center;font-size:13px}
+@media(max-width:700px){body{padding:14px 12px}table{min-width:100%;font-size:12px}}
+</style>
+</head>
+<body>
+
+<a class="back-btn" href="index.html?app=1">← Uygulamaya dön</a>
+<h2>Kullanıcı yönetimi</h2>
+<p class="sub">Kayıtlı hesapları listele ve rol ata. Tam veritabanı yedek/geri yükleme aşağıdadır. Kimlik (Authentication) hesapları Supabase panelinden yönetilir.</p>
+
+<div id="alertBox"></div>
+<div id="mainArea"><div class="loader">Oturum kontrol ediliyor…</div></div>
+
+<script>
+const SB_URL = 'https://ttsftbfzuaifheiajqbw.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c2Z0YmZ6dWFpZmhlaWFqcWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Nzc2MjcsImV4cCI6MjA5MTM1MzYyN30._QI7RdPNOMhcdA2k-GcHMAiAdzOEWZkmzG348H1NN7E';
+const REGISTRY = 'app_user_registry';
+
+function authToken(){ return localStorage.getItem('ac_access_token') || ''; }
+function authUserId(){ return localStorage.getItem('ac_user_id') || ''; }
+function apiHeaders(){
+  const token = authToken() || SB_KEY;
+  return {
+    apikey: SB_KEY,
+    Authorization: 'Bearer ' + token,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation'
+  };
+}
+
+function alertBox(html, cls) {
+  const el = document.getElementById('alertBox');
+  el.innerHTML = html ? `<div class="alert ${cls || 'info'}">${html}</div>` : '';
+}
+
+async function sbRegistry(path, opts) {
+  const r = await fetch(`${SB_URL}/rest/v1/${REGISTRY}${path}`, { ...opts, headers: { ...apiHeaders(), ...opts.headers } });
+  const text = await r.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+  if (!r.ok) {
+    const msg = (data && data.message) || (typeof data === 'string' ? data : text) || r.statusText;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function kisaId(uuid) {
+  if (!uuid || uuid.length < 12) return uuid || '—';
+  return uuid.slice(0, 8) + '…';
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+/** DB'de Admin / ADMIN / boşluk gibi farklar için */
+function rolNormalize(r) {
+  return (r == null ? '' : String(r)).trim().toLowerCase();
+}
+
+async function baslat() {
+  const area = document.getElementById('mainArea');
+  if (!authToken()) {
+    location.replace('index.html?app=1&auth=login');
+    return;
+  }
+  try {
+    const uid = authUserId();
+    if (!uid) {
+      location.replace('index.html?app=1&auth=login');
+      return;
+    }
+    const me = await sbRegistry(`?id=eq.${encodeURIComponent(uid)}&select=id,email,role`, { method: 'GET' });
+    if (!Array.isArray(me) || !me.length) {
+      area.innerHTML = `
+        <div class="card">
+          <div class="alert err" style="margin:0">
+            Hesabın <code style="font-size:12px">app_user_registry</code> tablosunda yok. Supabase’te
+            <strong>supabase-admin-user-registry.sql</strong> dosyasını çalıştırıp sayfayı yenile.
+          </div>
+          <p style="margin-top:14px;font-size:13px;color:var(--muted)">
+            Script mevcut kullanıcıları da doldurur; ardından kendi e-postanı
+            <code style="font-size:12px">UPDATE … SET role = 'admin'</code> ile yönetici yap.
+          </p>
+        </div>`;
+      return;
+    }
+    if (rolNormalize(me[0].role) !== 'admin') {
+      area.innerHTML = `
+        <div class="card">
+          <div class="alert warn" style="margin:0">
+            Bu oturumda yönetici rolü yok. Google ile giriş yaptıysanız, e-posta/şifre ile oluşturduğunuz hesaptan
+            <strong>farklı bir kullanıcı kimliği (UUID)</strong> oluşmuş olabilir; admin kaydı eski kimliğe bağlıdır.
+          </div>
+          <p style="margin-top:14px;font-size:13px;color:var(--text);line-height:1.6">
+            <strong>Çözüm:</strong> Repodaki <code style="font-size:12px">supabase-sync-admin-same-email.sql</code>
+            dosyasını (veya <code style="font-size:12px">supabase-grant-admin.sql</code>) Supabase SQL Editor’de çalıştırın;
+            Google hesabınızın UUID’sini kullanın. İsterseniz Authentication → Users’ta aynı e-postalı iki satır görürsünüz:
+            biri email, biri Google — uzun vadede Supabase’te hesap birleştirme (identity linking) ayarlarına bakın.
+          </p>
+          <p style="margin-top:12px"><a class="btn" href="index.html?app=1">Uygulamaya dön</a></p>
+        </div>`;
+      return;
+    }
+
+    const tumuRaw = await sbRegistry('?select=id,email,role,created_at&order=created_at.desc&limit=500', { method: 'GET' });
+    const tumu = Array.isArray(tumuRaw) ? tumuRaw : [];
+    alertBox(
+      "Tam kullanıcı silmek veya şifre sıfırlamak için Supabase panelinde Authentication → Users bölümünü kullanın. Yedek/geri yükleme için <code style=font-size:12px>supabase-admin-database-backup-restore.sql</code> dosyasını çalıştırın.",
+      'warn'
+    );
+    area.innerHTML = `
+      <div class="card">
+        <div class="ct">Veritabanı — tam yedek &amp; geri yükle</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px">
+          Tüm kullanıcıların <strong>uygulama verisini</strong> içerir: <code style=font-size:12px>app_user_registry</code>,
+          işlemler, taksitler, krediler, bütçe, kategoriler, üyeler, ekstre taslağı.
+          <strong>auth.users</strong> (giriş hesapları) bu dosyada yoktur; geri yükleme sadece public tabloları değiştirir.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+          <button type="button" class="btn suc" id="adminTamYedekBtn">⬇ Tam yedek indir</button>
+        </div>
+        <div style="border-top:.5px solid var(--border);padding-top:14px;margin-top:4px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Geri yükleme mevcut uygulama tablolarının üzerine yazar. Önce yedek alın.</p>
+          <input type="file" id="adminRestoreFile" accept=".json,application/json" style="display:none">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <button type="button" class="btn" id="adminRestorePick">JSON dosyası seç…</button>
+            <span id="adminRestoreLabel" style="font-size:12px;color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+            <button type="button" class="btn dan" id="adminGeriYukleBtn">Geri yükle</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">Kayıtlı kullanıcılar (${tumu.length})</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>E-posta</th>
+                <th>Rol</th>
+                <th>Kayıt</th>
+                <th>Kullanıcı ID</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tumu.map(u => satirHtml(u, uid)).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch (e) {
+    area.innerHTML = '';
+    let msg = 'Yüklenemedi: ' + escapeHtml(e.message);
+    if (String(e.message).includes('relation') && String(e.message).includes('does not exist')) {
+      msg += '<br><br>Önce <code>supabase-admin-user-registry.sql</code> dosyasını Supabase SQL Editor’da çalıştır.';
+    }
+    alertBox(msg, 'err');
+  }
+}
+
+function satirHtml(u, myId) {
+  const created = u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '—';
+  const isSelf = u.id === myId;
+  const rn = rolNormalize(u.role);
+  const selUser = rn === 'user' ? 'selected' : '';
+  const selAdmin = rn === 'admin' ? 'selected' : '';
+  let badge;
+  let rtxt;
+  if (rn === 'admin') {
+    badge = '<span class="badge adm">ADMIN</span>';
+    rtxt = '<span class="role-txt adm">Yönetici</span>';
+  } else if (rn === 'user') {
+    badge = '<span class="badge usr">ÜYE</span>';
+    rtxt = '<span class="role-txt usr">Kullanıcı</span>';
+  } else {
+    badge = `<span class="badge usr">${escapeHtml(u.role || '—')}</span>`;
+    rtxt = '<span class="role-txt usr">Tanımsız rol</span>';
+  }
+  const rolHucre = `<div class="role-cell">${rtxt}${badge}</div>`;
+  return `<tr class="tr-h" data-id="${escapeHtml(u.id)}">
+    <td>${escapeHtml(u.email || '—')}</td>
+    <td>${rolHucre}</td>
+    <td style="white-space:nowrap;font-size:12px;color:var(--muted)">${escapeHtml(created)}</td>
+    <td><span class="mono" title="${escapeHtml(u.id)}">${escapeHtml(kisaId(u.id))}</span>
+      <button type="button" class="btn" style="padding:4px 8px;font-size:11px;margin-left:6px" onclick="kopyala('${escapeHtml(u.id)}')">Kopyala</button>
+    </td>
+    <td style="white-space:nowrap">
+      <select class="rol-sel" data-was="${escapeHtml(u.role)}" ${isSelf ? 'disabled title="Kendi rolünü buradan değiştirme"' : ''}>
+        <option value="user" ${selUser}>Kullanıcı</option>
+        <option value="admin" ${selAdmin}>Yönetici</option>
+      </select>
+      <button type="button" class="btn pri rol-kaydet" style="margin-left:6px;padding:6px 12px;font-size:12px" data-id="${escapeHtml(u.id)}" ${isSelf ? 'disabled' : ''}>Kaydet</button>
+    </td>
+  </tr>`;
+}
+
+window.kopyala = async function (id) {
+  try {
+    await navigator.clipboard.writeText(id);
+    alertBox('Kullanıcı ID panoya kopyalandı.', 'info');
+    setTimeout(() => alertBox(''), 2500);
+  } catch (_) {
+    alertBox('Kopyalanamadı; ID: ' + escapeHtml(id), 'warn');
+  }
+};
+
+function rpcSonucCoz(data, fnAdi) {
+  if (data == null) return null;
+  if (typeof data === 'object' && !Array.isArray(data) && data.meta && data.data) return data;
+  if (Array.isArray(data) && data.length) {
+    const row = data[0];
+    if (row && typeof row === 'object' && fnAdi in row) return row[fnAdi];
+    const keys = Object.keys(row);
+    if (keys.length === 1) return row[keys[0]];
+    return row;
+  }
+  return data;
+}
+
+async function adminRpc(fnAdi, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fnAdi}`, {
+    method: 'POST',
+    headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body == null ? {} : body)
+  });
+  const text = await r.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch (_) {
+    throw new Error(text || r.statusText);
+  }
+  if (!r.ok) {
+    const msg = (data && (data.message || data.details || data.hint)) || text || r.statusText;
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  return rpcSonucCoz(data, fnAdi);
+}
+
+document.getElementById('mainArea').addEventListener('change', (ev) => {
+  const inp = ev.target;
+  if (inp.id !== 'adminRestoreFile') return;
+  const f = inp.files && inp.files[0];
+  const lab = document.getElementById('adminRestoreLabel');
+  if (lab) lab.textContent = f ? f.name : '';
+});
+
+document.getElementById('mainArea').addEventListener('click', async (ev) => {
+  const yBtn = ev.target.closest('#adminTamYedekBtn');
+  if (yBtn && !yBtn.disabled) {
+    yBtn.disabled = true;
+    alertBox('Yedek hazırlanıyor…', 'info');
+    try {
+      const yedek = await adminRpc('admin_database_export', {});
+      const tarihStr = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const blob = new Blob([JSON.stringify(yedek, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `aile-cuzdani-tam-yedek-${tarihStr}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      alertBox('Tam yedek indirildi.', 'info');
+      setTimeout(() => alertBox(''), 3000);
+    } catch (e) {
+      let m = e.message || String(e);
+      if (m.includes('does not exist') || m.includes('42883') || m.includes('P0001')) {
+        m += ' — Supabase’te supabase-admin-database-backup-restore.sql dosyasını çalıştırın.';
+      }
+      alertBox(escapeHtml(m), 'err');
+    } finally {
+      yBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (ev.target.closest('#adminRestorePick')) {
+    document.getElementById('adminRestoreFile')?.click();
+    return;
+  }
+
+  const gBtn = ev.target.closest('#adminGeriYukleBtn');
+  if (gBtn && !gBtn.disabled) {
+    const inp = document.getElementById('adminRestoreFile');
+    const f = inp && inp.files && inp.files[0];
+    if (!f) {
+      alertBox('Önce JSON dosyası seçin.', 'err');
+      return;
+    }
+    const onay = prompt(
+      'UYARI: Mevcut tüm uygulama tabloları bu dosyayla değiştirilecek.\n\nOnaylamak için tam olarak şunu yazın: TAM GERI YUKLE'
+    );
+    if (onay !== 'TAM GERI YUKLE') {
+      if (onay != null) alertBox('Onay metni eşleşmedi; işlem iptal.', 'err');
+      return;
+    }
+    gBtn.disabled = true;
+    alertBox('Geri yükleme başlıyor…', 'info');
+    try {
+      const text = await f.text();
+      const backup = JSON.parse(text);
+      await adminRpc('admin_database_restore', { p_backup: backup });
+      alertBox('Geri yükleme tamamlandı. Sayfayı yenilemeniz önerilir.', 'info');
+      setTimeout(() => alertBox(''), 4000);
+    } catch (e) {
+      let m = e.message || String(e);
+      if (m.includes('does not exist') || m.includes('42883')) {
+        m += ' — Supabase’te supabase-admin-database-backup-restore.sql dosyasını çalıştırın.';
+      }
+      alertBox(escapeHtml(m), 'err');
+    } finally {
+      gBtn.disabled = false;
+    }
+    return;
+  }
+
+  const btn = ev.target.closest('.rol-kaydet');
+  if (!btn || btn.disabled) return;
+  const id = btn.getAttribute('data-id');
+  const tr = btn.closest('tr');
+  const sel = tr && tr.querySelector('.rol-sel');
+  if (!sel || sel.disabled) return;
+  const yeni = sel.value;
+  const eski = sel.getAttribute('data-was');
+  if (yeni === eski) {
+    alertBox('Rol zaten aynı.', 'info');
+    setTimeout(() => alertBox(''), 2000);
+    return;
+  }
+  if (yeni === 'user' && id === authUserId()) {
+    alertBox('Kendi yönetici yetkini buradan kaldıramazsın.', 'err');
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await sbRegistry(`?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role: yeni })
+    });
+    sel.setAttribute('data-was', yeni);
+    const badgeCell = tr.children[1];
+    if (yeni === 'admin') {
+      badgeCell.innerHTML = '<div class="role-cell"><span class="role-txt adm">Yönetici</span><span class="badge adm">ADMIN</span></div>';
+    } else {
+      badgeCell.innerHTML = '<div class="role-cell"><span class="role-txt usr">Kullanıcı</span><span class="badge usr">ÜYE</span></div>';
+    }
+    alertBox('Rol güncellendi.', 'info');
+    setTimeout(() => alertBox(''), 2200);
+  } catch (e) {
+    alertBox(escapeHtml(e.message), 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+baslat();
+</script>
+</body>
+</html>
