@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ailemizin Gezi Haritası</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        #map { 
+            height: 70vh; 
+            width: 100%; 
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .info-text {
+            text-align: center;
+            margin-top: 15px;
+            color: #555;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🗺️ Zeynep ve Zehra'nın Keşif Haritası 🗺️</h2>
+    <div id="map"></div>
+    <div class="info-text">İşaretli yerlerin üzerine tıklayarak keşfettiğiniz şehirleri görebilirsiniz!</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Haritayı Türkiye merkezli olarak başlatıyoruz
+        var map = L.map('map').setView([39.0, 35.0], 6);
+
+        // OpenStreetMap katmanını ekliyoruz
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap katkıda bulunanlar'
+        }).addTo(map);
+
+        // Gittiğiniz yerlerin Koordinatları (Yaklaşık merkez koordinatlarıdır)
+        var visitedPlaces = [
+            {"name": "İstanbul (Evimiz / Başlangıç)", "lat": 41.083, "lng": 28.799},
+            {"name": "Edirne Merkez", "lat": 41.677, "lng": 26.555},
+            {"name": "Erikli", "lat": 40.635, "lng": 26.458},
+            {"name": "Gökçetepe", "lat": 40.645, "lng": 26.608},
+            {"name": "Gökçeada", "lat": 40.195, "lng": 25.901},
+            {"name": "İzmir", "lat": 38.423, "lng": 27.142},
+            {"name": "Çeşme", "lat": 38.323, "lng": 26.306},
+            {"name": "Bodrum", "lat": 37.034, "lng": 27.430},
+            {"name": "Ankara", "lat": 39.920, "lng": 32.854},
+            {"name": "Bursa", "lat": 40.182, "lng": 29.066},
+            {"name": "Kuşadası", "lat": 37.857, "lng": 27.261},
+            {"name": "Rize", "lat": 41.020, "lng": 40.523},
+            {"name": "Amasra", "lat": 41.748, "lng": 32.386},
+            {"name": "Balıkesir", "lat": 39.648, "lng": 27.882},
+            {"name": "Manisa", "lat": 38.619, "lng": 27.428},
+            {"name": "İzmit", "lat": 40.765, "lng": 29.940}
+        ];
+
+        // Haritaya işaretçileri (pinleri) ekliyoruz
+        visitedPlaces.forEach(function(place) {
+            var marker = L.marker([place.lat, place.lng]).addTo(map);
+            
+            // Başakşehir'i ev olarak ayırdım
+            if(place.name.includes("Evimiz")) {
+                marker.bindPopup("<b>🏡 " + place.name + "</b><br>Tüm maceraların başladığı yer!");
+            } else {
+                marker.bindPopup("<b>📍 " + place.name + "</b><br>Zeynep ve Zehra burayı keşfetti! ✅");
+            }
+        });
+    </script>
+</body>
+</html>
